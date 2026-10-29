@@ -259,7 +259,7 @@ def generate_candidates(*, observations: list[Observation], entities: list[Entit
             report["capped"] = len(dropped)
     last_t = frame_map.entries[-1].t_ms if frame_map.entries else track.last_t
     candidates: list[Candidate] = []
-    for number, draft in enumerate(sorted(drafts, key=lambda d: (d.t_start, d.t_end)), start=1):
+    for number, draft in enumerate(sorted(drafts, key=lambda d: (d.t_start, d.kind == "last_seen", d.t_end)), start=1):
         half = config.evidence_half_window_ms if draft.kind in INTERACTION_TYPES else 0
         w0, w1 = max(0, draft.t_start - half), min(last_t, draft.t_end + half)
         codes = list(draft.codes)

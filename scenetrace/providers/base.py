@@ -201,6 +201,7 @@ class ModelTurn:
     function_calls: list[FunctionCall]
     text: str | None  # prose is never published; it triggers a structured repair
     status: str
+    output_items: list[dict[str, Any]] = field(default_factory=list)  # replayed verbatim as history next turn
 
 
 class InvestigatorModel(Protocol):

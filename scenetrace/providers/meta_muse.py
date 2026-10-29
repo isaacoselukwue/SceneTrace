@@ -132,16 +132,17 @@ class MetaInvestigatorModel(_MuseCaller):
 
     def turn(self, ctx: RunContext, *, instructions: str, input_items: list[dict[str, Any]],
              previous_response_id: str | None, tools: list[dict[str, Any]]) -> ModelTurn:
+        # Stateless history: the caller replays prior output items (with encrypted reasoning) instead of
+        # chaining previous_response_id, so nothing about the conversation is stored by the provider.
         body: dict[str, Any] = {"instructions": instructions, "input": input_items, "tools": tools, "tool_choice": "auto",
                                 "parallel_tool_calls": False, "max_output_tokens": 3000, "reasoning": {"effort": "low"},
-                                "store": True}
-        if previous_response_id:
-            body["previous_response_id"] = previous_response_id
+                                "store": False, "include": ["reasoning.encrypted_content"]}
+        del previous_response_id
         data = self.respond(ctx, operation="investigate", body=body)
         calls = [FunctionCall(call_id=str(i["call_id"]), name=str(i["name"]), arguments=str(i.get("arguments") or ""))
                  for i in data.get("output", []) if i.get("type") == "function_call" and i.get("status", "completed") == "completed"]
         return ModelTurn(response_id=data.get("id"), function_calls=calls, text=output_text(data) or None,
-                         status=str(data.get("status")))
+                         status=str(data.get("status")), output_items=list(data.get("output") or []))
 
 
 class MetaReviewer(_MuseCaller):

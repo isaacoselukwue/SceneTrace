@@ -380,4 +380,6 @@ def test_meta_investigator_turn_uses_auto_tools_and_completed_calls_only(db, set
         _live_ctx(db, settings), instructions="x", input_items=[], previous_response_id="resp_0", tools=TOOLS)
     assert [c.name for c in turn.function_calls] == ["read_history"]
     body = transport.bodies[0]
-    assert body["tool_choice"] == "auto" and body["parallel_tool_calls"] is False and body["previous_response_id"] == "resp_0"
+    assert body["tool_choice"] == "auto" and body["parallel_tool_calls"] is False
+    assert "previous_response_id" not in body and body["store"] is False and body["include"] == ["reasoning.encrypted_content"]
+    assert turn.output_items and turn.output_items[0]["type"] == "function_call"

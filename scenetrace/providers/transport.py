@@ -124,7 +124,7 @@ class MetaTransport:
 
     def count_input_tokens(self, body: dict[str, Any]) -> HTTPResult:
         allowed = {k: v for k, v in body.items() if k in ("model", "input", "instructions", "tools", "previous_response_id",
-                                                          "text", "reasoning", "tool_choice", "parallel_tool_calls")}
+                                                          "text", "reasoning", "tool_choice", "parallel_tool_calls", "include")}
         started = time.monotonic()
         resp = self._request("POST", "/responses/input_tokens", json=allowed)
         if resp.status_code != 200:

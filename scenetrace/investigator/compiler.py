@@ -52,7 +52,7 @@ def allowed_unknown_codes(plan: Plan, events: dict[str, EventRevision], *, provi
     if plan.intent in ("history", "last_seen"):
         allowed.add("CURRENT_LOCATION_UNKNOWN")
     hidden = {"POSSIBLE_OCCLUSION", "NO_VISIBLE_TRANSITION", "INCOMPLETE_COVERAGE", "TARGET_LOST"}
-    if any(hidden & set(r.record.reason_codes) for r in relevant_events(plan, events)):
+    if any(hidden & set(r.record.reason_codes) for r in relevant):
         allowed.add("INSUFFICIENT_VISIBILITY")
     if not [r for r in relevant if r.record.status == "supported"] or plan.intent == "unsupported":
         allowed.add("NO_SUPPORTED_EVENT")
@@ -77,7 +77,17 @@ def fallback_draft(plan: Plan, events: dict[str, EventRevision], allowed: set[st
                                 certainty="supported" if record.status == "supported" else "possible"))
     order = ["ACTOR_NOT_ESTABLISHED", "INSUFFICIENT_VISIBILITY", "CURRENT_LOCATION_UNKNOWN", "NO_SUPPORTED_EVENT",
              "PROVIDER_UNAVAILABLE", "BUDGET_EXHAUSTED"]
-    codes = [c for c in order if c in allowed and (c != "NO_SUPPORTED_EVENT" or not any(x.certainty == "supported" for x in claims))]
+    supported = [c for c in claims if c.certainty == "supported"]
+    actions = [c for c in claims if c.predicate in ACTIONS]
+    needed = {
+        "ACTOR_NOT_ESTABLISHED": plan.intent in ("actor", "history", "interaction_window") and not any(c.actor_id for c in actions if c.certainty == "supported"),
+        "INSUFFICIENT_VISIBILITY": True,
+        "CURRENT_LOCATION_UNKNOWN": True,
+        "NO_SUPPORTED_EVENT": not supported,
+        "PROVIDER_UNAVAILABLE": True,  # a true statement about this investigation, even when records still answer
+        "BUDGET_EXHAUSTED": True,
+    }
+    codes = [c for c in order if c in allowed and needed[c]]
     return AnswerDraft(claims=claims, unknown_codes=codes)
 
 

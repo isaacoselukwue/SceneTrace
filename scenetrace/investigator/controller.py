@@ -76,21 +76,20 @@ def run_investigation(ctx: RunContext, *, providers: ProviderSet, store: Analysi
     # 2. Bounded tool loop. Unsupported questions never reach the model's tools.
     if plan.intent != "unsupported" and not budget_exhausted:
         instructions = runtime_prompt("investigator")
-        input_items = _opening(question, object_id, clip["duration_ms"] or 0, allowed)
-        previous: str | None = None
+        history = _opening(question, object_id, clip["duration_ms"] or 0, allowed)
         try:
             while limits["turns"] < settings.limit("max_investigator_turns") and draft is None:
                 ctx.checkpoint()
-                turn = providers.investigator.turn(ctx, instructions=instructions, input_items=input_items,
-                                                   previous_response_id=previous, tools=TOOLS)
+                turn = providers.investigator.turn(ctx, instructions=instructions, input_items=history,
+                                                   previous_response_id=None, tools=TOOLS)
                 limits["turns"] += 1
-                previous = turn.response_id
+                history = history + turn.output_items
                 if not turn.function_calls:
                     if limits["repairs"] >= settings.limit("max_answer_repairs"):
                         notes.append("PROSE_AFTER_REPAIR")
                         break
                     limits["repairs"] += 1  # the prose itself is withheld
-                    input_items = [{"type": "message", "role": "user", "content": [{"type": "input_text", "text": REPAIR_TEXT}]}]
+                    history = history + [{"type": "message", "role": "user", "content": [{"type": "input_text", "text": REPAIR_TEXT}]}]
                     continue
                 outputs = []
                 for call in turn.function_calls:
@@ -108,7 +107,7 @@ def run_investigation(ctx: RunContext, *, providers: ProviderSet, store: Analysi
                     result = run_tool(tc, call.name, call.arguments)
                     outputs.append({"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(result)})
                 if draft is None:
-                    input_items = outputs
+                    history = history + outputs
         except BudgetExceeded:
             budget_exhausted = True
             notes.append("BUDGET_EXHAUSTED")

@@ -190,6 +190,7 @@ def run_analysis(svc: Services, job: dict, cancel: CancelToken) -> str:
         emit("stage.progress", {"stage": "tracking", "summary": f"{result.role.capitalize()} tracking {'reused' if cached else 'finished'}:"
                                 f" {len({r.provider_object_id for r in result.records})} track(s), {result.coverage.terminal_status}."})
     timings["tracking_ms"] = int((time.monotonic() - t0) * 1000)
+    timings["tracking_reused_requests"] = sum(1 for _r, _k, cached in results if cached)
     target = loads(analysis["target_json"])
     frame_map = svc.store.frame_map(clip["id"])
     observations, entities, coverage = build_observations(analysis_id=analysis["id"], clip_id=clip["id"], frame_map=frame_map,

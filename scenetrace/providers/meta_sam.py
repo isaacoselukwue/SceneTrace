@@ -12,7 +12,10 @@ import base64
 import hashlib
 import json
 import math
+import multiprocessing
 import re
+import threading
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any, Literal
 
@@ -65,8 +68,11 @@ def translate_svg_path(path: str, dx: float, dy: float) -> str:
     return "".join(out)
 
 
-def to_provider_boxes(result: Any, *, width: int, height: int) -> tuple[list[ProviderBox], list[str]]:
-    """Convert parser records to ProviderBox in proxy pixels. Returns (boxes, diagnostics)."""
+def to_provider_boxes(result: Any, *, width: int, height: int, with_masks: bool = True) -> tuple[list[ProviderBox], list[str]]:
+    """Convert parser records to ProviderBox in proxy pixels. Returns (boxes, diagnostics).
+
+    Masks are decoded only when requested: the arithmetic-coded payloads are slow to decode in pure
+    Python, and person tracks only need boxes (the UI labels them as boxes, not pixel masks)."""
     diagnostics = [f"{d.code}@{d.line}" for d in result.diagnostics]
     masks = {(m.frame.frame_index if m.frame else 0, m.object_id): m for m in result.records if m.kind == "mask"}
     boxes: list[ProviderBox] = []
@@ -91,7 +97,7 @@ def to_provider_boxes(result: Any, *, width: int, height: int) -> tuple[list[Pro
         x0, y0, x1, y1 = max(0, x0), max(0, y0), min(width, x1), min(height, y1)
         confidence = None if rec.confidence is None else int(round(rec.confidence * 10_000))
         svg = area = centroid = None
-        mask = masks.get(key)
+        mask = masks.get(key) if with_masks else None
         if mask is not None:
             try:
                 raster = msp.decode_mask_to_raster(mask.mask)
@@ -117,6 +123,28 @@ def to_provider_boxes(result: Any, *, width: int, height: int) -> tuple[list[Pro
     return boxes, diagnostics
 
 
+def _parse_convert(events: list[dict[str, Any]], media: str, width: int, height: int,
+                   with_masks: bool) -> tuple[list[ProviderBox], list[str], str]:
+    result = parse_segmentation(events, media)  # type: ignore[arg-type]
+    boxes, diagnostics = to_provider_boxes(result, width=width, height=height, with_masks=with_masks)
+    return boxes, diagnostics, str(getattr(result.outcome, "status", ""))
+
+
+_POOL: ProcessPoolExecutor | None = None
+_POOL_LOCK = threading.Lock()
+
+
+def parse_in_process(events: list[dict[str, Any]], media: str, width: int, height: int,
+                     with_masks: bool) -> tuple[list[ProviderBox], list[str], str]:
+    """Run the CPU-heavy parse in a worker process so concurrent tracks decode in parallel."""
+    global _POOL
+    with _POOL_LOCK:
+        if _POOL is None:
+            _POOL = ProcessPoolExecutor(max_workers=2, mp_context=multiprocessing.get_context("spawn"))
+        pool = _POOL
+    return pool.submit(_parse_convert, events, media, width, height, with_masks).result()
+
+
 def missing_ranges(observed_frames: set[int], start: int, end: int) -> list[tuple[int, int]]:
     ranges: list[tuple[int, int]] = []
     run_start = None
@@ -137,6 +165,8 @@ class MetaSamTracker:
         self.settings = settings
         self.db = db
         self.model_id = settings.models["tracking"]
+        self._upload_lock = threading.Lock()
+        self._uploads: dict[str, str] = {}
 
     def _stream(self, ctx: RunContext, *, operation: str, body: dict[str, Any], bound: int,
                 cost: Any) -> tuple[StreamResult, str]:
@@ -164,6 +194,13 @@ class MetaSamTracker:
                                    provider_object_id=b.provider_object_id, confidence_bp=b.confidence_bp) for b in boxes]
 
     def _ensure_upload(self, ctx: RunContext, video: ProxyVideo) -> str:
+        with self._upload_lock:  # target and person tracks start together; upload the proxy once
+            key = f"{ctx.analysis_id}:{video.sha256}"
+            if key not in self._uploads:
+                self._uploads[key] = self._upload(ctx, video)
+            return self._uploads[key]
+
+    def _upload(self, ctx: RunContext, video: ProxyVideo) -> str:
         if ctx.run_mode == "live":
             row = self.db.one("SELECT provider_file_id FROM remote_files WHERE analysis_id = ? AND deleted_at IS NULL"
                               " AND delete_requested_at IS NULL", (ctx.analysis_id,))
@@ -207,9 +244,8 @@ class MetaSamTracker:
                                                  "metadata": metadata}, sort_keys=True).encode()).hexdigest()[:32]
         stream, call_id = self._stream(ctx, operation="sam_video", body=body, bound=rates.sam_video_cost(video.frame_count),
                                        cost=lambda u: rates.sam_video_cost(int(u.get("video_frames_processed") or video.frame_count)))
-        result = parse_segmentation(stream.events, "video")
-        boxes, diagnostics = to_provider_boxes(result, width=video.width, height=video.height)
-        completed = stream.terminal == "response.completed" and getattr(result.outcome, "status", "") == "completed"
+        boxes, diagnostics, parsed_status = parse_in_process(stream.events, "video", video.width, video.height, role == "target")
+        completed = stream.terminal == "response.completed" and parsed_status == "completed"
         last = video.frame_count - 1
         observed = {b.proxy_frame_index for b in boxes}
         coverage = Coverage(request_key=request_key, concept=concept, role=role, requested_start_frame=0,
