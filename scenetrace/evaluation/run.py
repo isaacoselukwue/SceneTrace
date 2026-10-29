@@ -236,7 +236,10 @@ def review_cases(svc: Services, results: list[dict], sources: dict[str, str]) ->
         row["reviewer_blocked"] = bool(outcome.blocked or outcome.needs_evidence)
     planted = [r for r in results if r["category"] != "clean"]
     controls = [r for r in results if r["category"] == "clean"]
+    spent = svc.db.one("SELECT COALESCE(SUM(COALESCE(actual_microusd, reserved_microusd)), 0) AS s, COUNT(*) AS n FROM provider_calls"
+                       " WHERE scope = 'eval' AND cost_status NOT IN ('free', 'released')")
     return {"status": "measured", "model": settings.models["reviewer"], "mode": "image_secondary",
+            "cost_microusd": spent["s"] if spent else None, "paid_calls": spent["n"] if spent else None,
             "caught": sum(1 for r in planted if r["reviewer_blocked"]), "false_rejects": sum(1 for r in controls if r["reviewer_blocked"]),
             "unavailable_results": errors,
             "note": "needs_evidence counts as blocked, as in production. Reviewer-only figures deliberately bypass the validator."}

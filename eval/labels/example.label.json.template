@@ -1,0 +1,19 @@
+{
+  "clip_id": "test_visible",
+  "split": "held_out",
+  "media_kind": "user_upload",
+  "source_sha256": "sha256 of the original uploaded file, recorded before any analysis",
+  "description": "What the camera shows, written before running any system.",
+  "events": [
+    {"event_type": "pick_up", "t_start_ms": 12000, "t_end_ms": 12600, "actor": "person_a", "observable": true, "zone": null}
+  ],
+  "actors": [
+    {"actor": "person_a", "present_ms": [8000, 20000]}
+  ],
+  "questions": [
+    {"intent": "actor", "question": "Who picked up the bottle?", "observable": true},
+    {"intent": "history", "question": "What happened to the bottle?", "observable": true},
+    {"intent": "last_seen", "question": "Where was the bottle last seen?", "observable": true}
+  ],
+  "annotator_notes": "Private notes stay out of model inputs. Use actor null and observable false when the footage cannot establish them."
+}
