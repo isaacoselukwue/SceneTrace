@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-10-28",
+  "source": "https://dev.meta.ai/docs/pricing-rate-limits",
+  "mode": "standard",
+  "status": "documentation_verified_not_account_benchmarked",
+  "text_models": {
+    "muse-spark-1.3": {"input_microusd_per_million": 1250000, "cached_input_microusd_per_million": 150000, "output_microusd_per_million": 4250000},
+    "muse-wonder-1.0": {"input_microusd_per_million": 4000000, "cached_input_microusd_per_million": 200000, "output_microusd_per_million": 20000000}
+  },
+  "sam-3.1": {"image_microusd": 2500, "video_frame_microusd": 200, "minimum_video_frames_per_request": 50}
+}

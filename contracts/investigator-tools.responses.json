@@ -1,0 +1,231 @@
+[
+  {
+    "type": "function",
+    "name": "read_history",
+    "description": "Read stored revisions for the selected object. No provider work.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "pattern": "^O[1-9][0-9]*$"
+        }
+      },
+      "required": [
+        "object_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "read_events",
+    "description": "Read stored event records in a bounded clip interval. No provider work.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "pattern": "^O[1-9][0-9]*$"
+        },
+        "t_start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "t_end_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "object_id",
+        "t_start_ms",
+        "t_end_ms"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "inspect_window",
+    "description": "Request a bounded additional visual inspection of an existing candidate. The server chooses assets and enforces budget.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "candidate_id": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "CHECK_VISIBILITY",
+            "CHECK_ACTOR_ASSOCIATION",
+            "CHECK_TRANSITION",
+            "CHECK_DESTINATION"
+          ]
+        }
+      },
+      "required": [
+        "candidate_id",
+        "purpose"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "assess_event",
+    "description": "Request assessment of an existing candidate using permitted evidence. Does not publish a claim.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "candidate_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "candidate_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "type": "function",
+    "name": "submit_claims",
+    "description": "Submit structured claims for deterministic validation. No prose answer is published directly.",
+    "strict": true,
+    "parameters": {
+      "$defs": {
+        "Claim": {
+          "additionalProperties": false,
+          "properties": {
+            "claim_id": {
+              "pattern": "^C[1-9][0-9]*$",
+              "title": "Claim Id",
+              "type": "string"
+            },
+            "event_id": {
+              "pattern": "^E[1-9][0-9]*$",
+              "title": "Event Id",
+              "type": "string"
+            },
+            "event_revision": {
+              "minimum": 1,
+              "title": "Event Revision",
+              "type": "integer"
+            },
+            "object_id": {
+              "pattern": "^(O|P|Z)[1-9][0-9]*$",
+              "title": "Object Id",
+              "type": "string"
+            },
+            "predicate": {
+              "enum": [
+                "first_seen",
+                "pick_up",
+                "put_down",
+                "place_in_zone",
+                "last_seen"
+              ],
+              "title": "Predicate",
+              "type": "string"
+            },
+            "actor_id": {
+              "anyOf": [
+                {
+                  "pattern": "^(O|P|Z)[1-9][0-9]*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor Id"
+            },
+            "zone_id": {
+              "anyOf": [
+                {
+                  "pattern": "^(O|P|Z)[1-9][0-9]*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Zone Id"
+            },
+            "t_start_ms": {
+              "minimum": 0,
+              "title": "T Start Ms",
+              "type": "integer"
+            },
+            "t_end_ms": {
+              "minimum": 0,
+              "title": "T End Ms",
+              "type": "integer"
+            },
+            "certainty": {
+              "enum": [
+                "supported",
+                "possible"
+              ],
+              "title": "Certainty",
+              "type": "string"
+            }
+          },
+          "required": [
+            "claim_id",
+            "event_id",
+            "event_revision",
+            "object_id",
+            "predicate",
+            "actor_id",
+            "zone_id",
+            "t_start_ms",
+            "t_end_ms",
+            "certainty"
+          ],
+          "title": "Claim",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "claims": {
+          "items": {
+            "$ref": "#/$defs/Claim"
+          },
+          "maxItems": 8,
+          "title": "Claims",
+          "type": "array"
+        },
+        "unknown_codes": {
+          "items": {
+            "enum": [
+              "ACTOR_NOT_ESTABLISHED",
+              "CURRENT_LOCATION_UNKNOWN",
+              "INSUFFICIENT_VISIBILITY",
+              "TARGET_AMBIGUOUS",
+              "BUDGET_EXHAUSTED",
+              "PROVIDER_UNAVAILABLE",
+              "NO_SUPPORTED_EVENT"
+            ],
+            "type": "string"
+          },
+          "title": "Unknown Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "claims",
+        "unknown_codes"
+      ],
+      "title": "AnswerDraft",
+      "type": "object"
+    }
+  }
+]

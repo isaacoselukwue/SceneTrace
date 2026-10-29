@@ -1,0 +1,67 @@
+{
+  "$defs": {
+    "AuditFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "reject",
+            "needs_evidence"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        },
+        "reason_code": {
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^V[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "claim_id",
+        "verdict",
+        "reason_code",
+        "evidence_ids"
+      ],
+      "title": "AuditFinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "verdict": {
+      "enum": [
+        "pass",
+        "reject",
+        "needs_evidence"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/AuditFinding"
+      },
+      "title": "Findings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "verdict",
+    "findings"
+  ],
+  "title": "AuditResult",
+  "type": "object"
+}

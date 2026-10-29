@@ -1,0 +1,48 @@
+[project]
+name = "scenetrace"
+version = "0.1.0"
+description = "Evidence-backed object histories for short fixed-camera video. Created by Isaac Oselukwue."
+authors = [{ name = "Isaac Oselukwue" }]
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi==0.162.0",
+    "uvicorn==0.54.0",
+    "pydantic==2.13.5",
+    "httpx==0.28.1",
+    "python-multipart==0.0.32",
+    "pillow==13.0.0",
+    "numpy==2.5.4",
+    "meta-sam-parser==0.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.2.0",
+    "pyrefly==1.4.0",
+    "ruff==0.17.3",
+    "jsonschema==4.26.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "live: calls the real Meta Model API; opt-in only through make test-live",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["client", ".venv", ".local"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.pyrefly]
+project-includes = ["scenetrace", "reference_core"]
+python-version = "3.12"

@@ -1,0 +1,92 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "claim_id": {
+      "pattern": "^C[1-9][0-9]*$",
+      "title": "Claim Id",
+      "type": "string"
+    },
+    "event_id": {
+      "pattern": "^E[1-9][0-9]*$",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_revision": {
+      "minimum": 1,
+      "title": "Event Revision",
+      "type": "integer"
+    },
+    "object_id": {
+      "pattern": "^(O|P|Z)[1-9][0-9]*$",
+      "title": "Object Id",
+      "type": "string"
+    },
+    "predicate": {
+      "enum": [
+        "first_seen",
+        "pick_up",
+        "put_down",
+        "place_in_zone",
+        "last_seen"
+      ],
+      "title": "Predicate",
+      "type": "string"
+    },
+    "actor_id": {
+      "anyOf": [
+        {
+          "pattern": "^(O|P|Z)[1-9][0-9]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Actor Id"
+    },
+    "zone_id": {
+      "anyOf": [
+        {
+          "pattern": "^(O|P|Z)[1-9][0-9]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Zone Id"
+    },
+    "t_start_ms": {
+      "minimum": 0,
+      "title": "T Start Ms",
+      "type": "integer"
+    },
+    "t_end_ms": {
+      "minimum": 0,
+      "title": "T End Ms",
+      "type": "integer"
+    },
+    "certainty": {
+      "enum": [
+        "supported",
+        "possible"
+      ],
+      "title": "Certainty",
+      "type": "string"
+    }
+  },
+  "required": [
+    "claim_id",
+    "event_id",
+    "event_revision",
+    "object_id",
+    "predicate",
+    "actor_id",
+    "zone_id",
+    "t_start_ms",
+    "t_end_ms",
+    "certainty"
+  ],
+  "title": "Claim",
+  "type": "object"
+}

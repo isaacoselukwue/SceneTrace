@@ -1,0 +1,106 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "pattern": "^E[1-9][0-9]*$",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "object_id": {
+      "pattern": "^(O|P|Z)[1-9][0-9]*$",
+      "title": "Object Id",
+      "type": "string"
+    },
+    "event_type": {
+      "enum": [
+        "first_seen",
+        "pick_up",
+        "put_down",
+        "place_in_zone",
+        "last_seen"
+      ],
+      "title": "Event Type",
+      "type": "string"
+    },
+    "actor_id": {
+      "anyOf": [
+        {
+          "pattern": "^(O|P|Z)[1-9][0-9]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Actor Id"
+    },
+    "zone_id": {
+      "anyOf": [
+        {
+          "pattern": "^(O|P|Z)[1-9][0-9]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Zone Id"
+    },
+    "t_start_ms": {
+      "minimum": 0,
+      "title": "T Start Ms",
+      "type": "integer"
+    },
+    "t_end_ms": {
+      "minimum": 0,
+      "title": "T End Ms",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "supported",
+        "plausible",
+        "contested",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "evidence_ids": {
+      "items": {
+        "pattern": "^V[1-9][0-9]*$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Ids",
+      "type": "array"
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "event_id",
+    "revision",
+    "object_id",
+    "event_type",
+    "actor_id",
+    "zone_id",
+    "t_start_ms",
+    "t_end_ms",
+    "status",
+    "evidence_ids",
+    "reason_codes"
+  ],
+  "title": "EventRecord",
+  "type": "object"
+}

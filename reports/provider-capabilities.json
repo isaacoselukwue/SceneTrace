@@ -1,0 +1,318 @@
+{
+  "checked_at": "2026-10-28T15:27:00+00:00",
+  "base_url": "https://api.meta.ai/v1",
+  "python": "3.12.14",
+  "transport": {
+    "httpx": "0.28.1"
+  },
+  "parser": {
+    "meta-sam-parser": "0.1.0"
+  },
+  "model_ids": {
+    "tracking": "sam-3.1",
+    "investigator": "muse-spark-1.3",
+    "reviewer": "muse-wonder-1.0"
+  },
+  "media": "synthetic rendered test clip (not real footage)",
+  "mode": "standard",
+  "checks": {
+    "auth_and_model_listing": {
+      "status": "passed",
+      "elapsed_ms": 1410,
+      "request_ids": {
+        "x-request-id": "70e0d9a4-7c77-495f-a802-55e41b4f7c8c"
+      },
+      "listed_models": [
+        "muse-image-1.0",
+        "muse-spark-1.1",
+        "muse-spark-1.2",
+        "muse-spark-1.2-contributor",
+        "muse-spark-1.3",
+        "muse-spark-1.3-contributor",
+        "muse-voice-transcribe-1.0",
+        "muse-wonder-1.0",
+        "sam-3.1"
+      ],
+      "required_listed": {
+        "tracking": true,
+        "investigator": true,
+        "reviewer": true
+      },
+      "note": "A listing alone does not establish image or video capability."
+    },
+    "sam_image": {
+      "status": "passed",
+      "elapsed_ms": 1453,
+      "request_ids": {
+        "x-ratelimit-limit-requests": "60",
+        "x-ratelimit-remaining-requests": "60",
+        "x-request-id": "7c432d8f-1018-4e8d-8374-91ca1f663af4"
+      },
+      "response_id": "resp_6ae2144673cf05eec0e94e8e",
+      "terminal_event": "response.completed",
+      "usage": {
+        "images_processed": 1,
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "detail": {
+        "boxes": [
+          [
+            512,
+            361,
+            528,
+            404,
+            0.9024390578269958
+          ]
+        ],
+        "diagnostics": [],
+        "outcome": "completed"
+      }
+    },
+    "files_upload": {
+      "status": "passed",
+      "elapsed_ms": 2076,
+      "request_ids": {
+        "x-request-id": "feb31053-92b3-4cd4-86cb-b7a42011d6c8"
+      },
+      "detail": {
+        "object": "file",
+        "bytes": 108095,
+        "purpose": "user_data",
+        "status": "uploaded",
+        "expires_at": 1793204824
+      }
+    },
+    "sam_video_bottle": {
+      "status": "passed",
+      "elapsed_ms": 8789,
+      "request_ids": {
+        "x-ratelimit-limit-requests": "60",
+        "x-ratelimit-remaining-requests": "59",
+        "x-request-id": "d8e31acf-588e-41e5-949d-e16f185cbe1d"
+      },
+      "response_id": "resp_6ae2144a6a08bd41cb2c4ae6",
+      "terminal_event": "response.completed",
+      "usage": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 0,
+        "video_frames_processed": 200
+      },
+      "detail": {
+        "frames_with_records": 177,
+        "first_frame": 0,
+        "last_frame": 178,
+        "object_ids": [
+          "0"
+        ],
+        "delta_events": 177,
+        "event_types": [
+          "response.completed",
+          "response.content_part.added",
+          "response.content_part.done",
+          "response.created",
+          "response.in_progress",
+          "response.output_item.added",
+          "response.output_item.done",
+          "response.output_text.delta",
+          "response.output_text.done"
+        ],
+        "diagnostics": [],
+        "outcome": "completed"
+      }
+    },
+    "sam_video_person": {
+      "status": "passed",
+      "elapsed_ms": 8209,
+      "request_ids": {
+        "x-ratelimit-limit-requests": "60",
+        "x-ratelimit-remaining-requests": "58",
+        "x-request-id": "b076ce55-cfbb-4ccb-b5af-5666e91ec220"
+      },
+      "response_id": "resp_6ae21453c1dad83bb42e4c06",
+      "terminal_event": "response.completed",
+      "usage": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 0,
+        "video_frames_processed": 200
+      },
+      "detail": {
+        "frames_with_records": 139,
+        "first_frame": 30,
+        "last_frame": 183,
+        "object_ids": [
+          "0",
+          "1"
+        ],
+        "delta_events": 139,
+        "event_types": [
+          "response.completed",
+          "response.content_part.added",
+          "response.content_part.done",
+          "response.created",
+          "response.in_progress",
+          "response.output_item.added",
+          "response.output_item.done",
+          "response.output_text.delta",
+          "response.output_text.done"
+        ],
+        "diagnostics": [],
+        "outcome": "completed"
+      }
+    },
+    "input_token_count_image": {
+      "status": "passed",
+      "elapsed_ms": 1715,
+      "detail": {
+        "object": "response.input_tokens",
+        "input_tokens": 881
+      },
+      "request_ids": {
+        "x-ratelimit-limit-requests": "3000",
+        "x-ratelimit-remaining-requests": "2999",
+        "x-request-id": "6ed3ba11-1876-4a8e-9834-9a0f90243e91"
+      }
+    },
+    "muse_spark_image_structured": {
+      "status": "passed",
+      "elapsed_ms": 2325,
+      "request_ids": {
+        "x-ratelimit-limit-requests": "3000",
+        "x-ratelimit-remaining-requests": "2998",
+        "x-request-id": "8e8bbbfb-dc7b-458b-819d-d4fc9056f8a0"
+      },
+      "response_id": "resp_6ae2146827d7ddf97e424a2b",
+      "usage": {
+        "input_tokens": 670,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 511,
+        "output_tokens_details": {
+          "reasoning_tokens": 470
+        },
+        "total_tokens": 1181
+      },
+      "detail": {
+        "parsed": {
+          "bottle_held_by_person": "no",
+          "bottle_visible": "yes",
+          "person_count": 1,
+          "reason_codes": [
+            "STABLE",
+            "NO_VISIBLE_TRANSITION"
+          ]
+        },
+        "locally_valid": true,
+        "response_status": "completed"
+      }
+    },
+    "muse_wonder_image_structured": {
+      "status": "passed",
+      "elapsed_ms": 4774,
+      "request_ids": {
+        "x-ratelimit-limit-requests": "3000",
+        "x-ratelimit-remaining-requests": "2999",
+        "x-request-id": "0f1a1ac7-62c6-4337-84bf-73248fabbbbc"
+      },
+      "response_id": "resp_6ae2146d495b7607c0ca4b9b",
+      "usage": {
+        "input_tokens": 670,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 428,
+        "output_tokens_details": {
+          "reasoning_tokens": 370
+        },
+        "total_tokens": 1098
+      },
+      "detail": {
+        "parsed": {
+          "bottle_held_by_person": "yes",
+          "bottle_visible": "yes",
+          "person_count": 1,
+          "reason_codes": [
+            "SMALL_TARGET",
+            "STABLE"
+          ]
+        },
+        "locally_valid": true,
+        "response_status": "completed"
+      }
+    },
+    "tool_round_trip": {
+      "status": "passed",
+      "elapsed_ms": 10867,
+      "usage": [
+        {
+          "input_tokens": 572,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          },
+          "output_tokens": 94,
+          "output_tokens_details": {
+            "reasoning_tokens": 25
+          },
+          "total_tokens": 666
+        },
+        {
+          "input_tokens": 690,
+          "input_tokens_details": {
+            "cached_tokens": 113
+          },
+          "output_tokens": 217,
+          "output_tokens_details": {
+            "reasoning_tokens": 162
+          },
+          "total_tokens": 907
+        }
+      ],
+      "detail": {
+        "function_name": "read_history",
+        "arguments_valid": true,
+        "call_status": "completed",
+        "second_status": "completed",
+        "second_output_types": [
+          "reasoning",
+          "message"
+        ]
+      },
+      "error": null
+    },
+    "remote_file_cleanup": {
+      "status": "passed",
+      "detail": {
+        "delete_status": 200,
+        "retrieve_after_delete": 404
+      }
+    }
+  },
+  "status_vocabulary": [
+    "passed",
+    "failed",
+    "unavailable",
+    "not_tested"
+  ]
+}

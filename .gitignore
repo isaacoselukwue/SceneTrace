@@ -1,0 +1,25 @@
+# Secrets and local state
+.env
+.env.*
+!.env.example
+.local/
+*.sqlite3
+*.sqlite3-*
+
+# Private footage never belongs in the repository
+samples/private/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.pyrefly_cache/
+
+# Client
+client/node_modules/
+client/dist/
+client/test-results/
+client/playwright-report/
+client/.vite/

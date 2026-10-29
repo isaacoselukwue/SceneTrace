@@ -1,0 +1,54 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "evidence_id": {
+      "pattern": "^V[1-9][0-9]*$",
+      "title": "Evidence Id",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "asset_path": {
+      "title": "Asset Path",
+      "type": "string"
+    },
+    "asset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Asset Sha256",
+      "type": "string"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    },
+    "role": {
+      "enum": [
+        "before",
+        "during",
+        "after",
+        "observation"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "derived": {
+      "title": "Derived",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "evidence_id",
+    "source_sha256",
+    "asset_path",
+    "asset_sha256",
+    "t_ms",
+    "role",
+    "derived"
+  ],
+  "title": "Evidence",
+  "type": "object"
+}

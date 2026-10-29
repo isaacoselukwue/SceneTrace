@@ -1,0 +1,70 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "intent": {
+      "enum": [
+        "history",
+        "actor",
+        "last_seen",
+        "interaction_window",
+        "unsupported"
+      ],
+      "title": "Intent",
+      "type": "string"
+    },
+    "target_hint": {
+      "title": "Target Hint",
+      "type": "string"
+    },
+    "object_id": {
+      "anyOf": [
+        {
+          "pattern": "^(O|P|Z)[1-9][0-9]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Object Id"
+    },
+    "t_start_ms": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "T Start Ms"
+    },
+    "t_end_ms": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "T End Ms"
+    },
+    "needs_person_tracks": {
+      "title": "Needs Person Tracks",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "intent",
+    "target_hint",
+    "object_id",
+    "t_start_ms",
+    "t_end_ms",
+    "needs_person_tracks"
+  ],
+  "title": "Plan",
+  "type": "object"
+}

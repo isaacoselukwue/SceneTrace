@@ -1,0 +1,39 @@
+{
+  "clip_id": "synthetic_bench_pickup",
+  "media_kind": "synthetic_render",
+  "not_real_footage": true,
+  "description": "Drawn animation. A bottle stands on a bench. One figure walks past in front of it; a second figure lifts it and carries it away.",
+  "fps": 25,
+  "width": 960,
+  "height": 540,
+  "duration_ms": 20000,
+  "renderer": "tools/render_synthetic_clip.py",
+  "events": [
+    {
+      "event_type": "pick_up",
+      "t_start_ms": 13000,
+      "t_end_ms": 14600,
+      "actor": "picker",
+      "observable": true,
+      "zone": null
+    }
+  ],
+  "questions": [
+    {
+      "intent": "actor",
+      "question": "Who picked up the bottle?",
+      "observable": true
+    },
+    {
+      "intent": "history",
+      "question": "What happened to the bottle?",
+      "observable": true
+    },
+    {
+      "intent": "interaction_window",
+      "question": "Did anyone touch the bottle between 00:04 and 00:08?",
+      "observable": true
+    }
+  ],
+  "note": "Ground truth describes what the renderer drew. Synthetic results are smoke tests, not vision benchmark evidence."
+}
