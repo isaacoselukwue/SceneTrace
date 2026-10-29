@@ -161,8 +161,8 @@ def test_rates_cached_tokens_not_charged_twice(settings: Settings) -> None:
 
 
 def test_settings_repr_hides_secrets(settings: Settings) -> None:
-    loaded = Settings.load(settings.root, env={"MODEL_API_KEY": "secret-value-123", "SCENETRACE_DATA_DIR": str(settings.data_dir)})
-    assert "secret-value-123" not in repr(loaded)
+    loaded = Settings.load(settings.root, env={"MODEL_API_KEY": "fake-value-123", "SCENETRACE_DATA_DIR": str(settings.data_dir)})
+    assert "fake-value-123" not in repr(loaded)
 
 
 def test_storage_refuses_traversal_and_symlinks(db, settings: Settings, tmp_path) -> None:

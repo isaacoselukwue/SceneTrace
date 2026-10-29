@@ -11,7 +11,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PATTERNS = [re.compile(rb"(?i)bearer\s+[a-z0-9._\-]{24,}"), re.compile(rb"MODEL_API_KEY\s*=\s*[A-Za-z0-9._\-]{16,}"),
+PATTERNS = [re.compile(rb"(?i)bearer\s+[a-z0-9._\-]{24,}"), re.compile(rb"MODEL_API_KEY=[A-Za-z0-9._\-]{16,}"),
+            re.compile(rb"MODEL_API_KEY[\"']?\s*:\s*[\"'][A-Za-z0-9._\-]{16,}"),
             re.compile(rb"(?<![A-Za-z0-9_\-])sk-[A-Za-z0-9]{24,}")]
 
 
