@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type AnalysisOut, type CapabilitiesOut, type ClipOut, type SessionOut } from "../api/client";
 import { useJobEvents } from "../lib/useJobEvents";
-import { AnswerPanel } from "./AnswerPanel";
+import { AnswerPanel, AnswerPlaceholder } from "./AnswerPanel";
 import { ModeBanner, RunModeBadge } from "./Badges";
 import { EvidenceDrawer } from "./EvidenceDrawer";
 import { Icon } from "./Icons";
@@ -106,6 +106,7 @@ export function AnalysisPage({ analysisId, session, navigate }: {
   if (!analysis || !clip) return <main id="main"><p className="muted">Loading…</p></main>;
   const owner = session?.scope === "owner" && !analysis.demo;
   const finished = ["completed", "partial"].includes(analysis.status);
+  const portrait = (clip.proxy_height ?? 0) > (clip.proxy_width ?? 0);
   const seek = (ms: number) => video.current?.seek(ms);
   const cite = (eventId: string, ms: number) => { seek(ms); setOpenEvent(eventId); };
   return (
@@ -134,26 +135,24 @@ export function AnalysisPage({ analysisId, session, navigate }: {
         </section>
       )}
       {analysis.status === "needs_selection" && <SelectionStep analysis={analysis} onBound={load} />}
-      <div className="grid">
-        <div className="col-main">
-          <div className="area-video"><VideoCanvas ref={video} clip={clip} analysis={analysis} /></div>
-          <div className="tabs mobile-only area-tabs" role="tablist" aria-label="Panels">
-            {TABS.map((t) => (
-              <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
-            ))}
-          </div>
-          <div className={`tab-panel area-answer ${tab === "answer" ? "active" : ""}`}>
-            {finished && <AnswerPanel analysis={analysis} canAsk={owner} onCite={cite} />}
-          </div>
+      <div className={`grid${portrait ? " portrait" : ""}`}>
+        <div className="area-video"><VideoCanvas ref={video} clip={clip} analysis={analysis} /></div>
+        <div className="tabs mobile-only area-tabs" role="tablist" aria-label="Panels">
+          {TABS.map((t) => (
+            <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
+          ))}
         </div>
-        <div className="col-side">
-          <div className={`tab-panel area-history ${tab === "history" ? "active" : ""}`}>
-            <ObjectHistory analysis={analysis} onOpen={setOpenEvent} onSeek={seek} />
-          </div>
-          <div className={`tab-panel area-details ${tab === "details" ? "active" : ""}`}>
-            <IntegrityPanel analysis={analysis} canExport={owner && finished} />
-            <UsageSummary analysis={analysis} />
-          </div>
+        <div className={`tab-panel area-history ${tab === "history" ? "active" : ""}`}>
+          <ObjectHistory analysis={analysis} onOpen={setOpenEvent} onSeek={seek} />
+        </div>
+        <div className={`tab-panel area-answer ${tab === "answer" ? "active" : ""}`}>
+          {finished ? <AnswerPanel analysis={analysis} canAsk={owner} onCite={cite} /> : <AnswerPlaceholder status={analysis.status} />}
+        </div>
+        <div className={`tab-panel area-integrity ${tab === "details" ? "active" : ""}`}>
+          <IntegrityPanel analysis={analysis} owner={owner} />
+        </div>
+        <div className={`tab-panel area-usage ${tab === "details" ? "active" : ""}`}>
+          <UsageSummary analysis={analysis} />
         </div>
       </div>
       {openEvent && <EvidenceDrawer analysis={analysis} eventId={openEvent} onClose={() => setOpenEvent(null)} onSeek={seek} />}

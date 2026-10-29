@@ -28,7 +28,7 @@ export function TargetSelector({ clip, capabilities, onStarted }: {
   const [tMs, setTMs] = useState(0);
   const [image, setImage] = useState<string | null>(null);
   const [kind, setKind] = useState<"concept" | "box">("concept");
-  const [phrase, setPhrase] = useState("bottle");
+  const [phrase, setPhrase] = useState("");
   const [box, setBox] = useState<[number, number, number, number] | null>(null);
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const [zoneOn, setZoneOn] = useState(false);
@@ -100,6 +100,7 @@ export function TargetSelector({ clip, capabilities, onStarted }: {
       <div className="selector-grid">
         <div className="selector-media">
           <div className={`selector-frame tool-${tool}`} ref={holder} onPointerDown={onPointerDown}
+            style={width && height ? { aspectRatio: `${width} / ${height}` } : undefined}
             onPointerMove={(e) => { if (tool === "box" && drag) { const p = point(e); if (p) setBox(boxFromDrag(drag, p, width, height)); } }}
             onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)}>
             {image && <img src={image} alt={`Frame at ${clipTime(tMs)}`} draggable={false} />}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { JobEvent } from "../api/client";
 import { explainRejection, whyNotSupported } from "./explain";
-import { clipTime, interval, usd } from "./format";
+import { clipTime, duration, elapsed, interval, usd } from "./format";
 import { boxFromDrag, containRect, frameAt, toMediaPixel } from "./geometry";
 import { mergeEvents } from "./useJobEvents";
 
@@ -40,6 +40,17 @@ describe("formatting", () => {
     expect(usd(101422)).toBe("$0.10");
     expect(usd(2500)).toBe("$0.0025");
     expect(usd(null)).toBe("unknown");
+  });
+
+  it("switches long durations to minutes and keeps the trace clock compact", () => {
+    expect(duration(888)).toBe("888 ms");
+    expect(duration(23_105)).toBe("23.1 s");
+    expect(duration(59_949)).toBe("59.9 s");
+    expect(duration(59_950)).toBe("1 min");
+    expect(duration(404_512)).toBe("6 min 45 s");
+    expect(duration(undefined)).toBe("not recorded");
+    expect(elapsed(4_260)).toBe("0:04.3");
+    expect(elapsed(404_512)).toBe("6:44.5");
   });
 });
 

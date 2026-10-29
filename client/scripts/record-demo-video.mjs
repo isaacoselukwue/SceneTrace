@@ -103,7 +103,9 @@ await wait(2000);
 await page.getByRole("button", { name: "Upload" }).click();
 await page.getByRole("heading", { name: "Select the object to follow" }).waitFor({ timeout: 60000 });
 await caption("Describe the object in a few words. SAM 3.1 finds it on the chosen frame; if several things match, you pick one.");
-await wait(4500);
+await wait(1500);
+await page.getByLabel(/Short noun phrase/).pressSequentially("bottle", { delay: 120 });
+await wait(2500);
 await page.getByRole("radio", { name: /Live analysis/ }).check();
 await caption("Live mode calls Meta Model API. Every paid call is reserved against the cost caps before it is sent.");
 await wait(4500);
@@ -128,7 +130,7 @@ await caption("Overlays show only observed tracks: the bottle's SAM mask and box
 await wait(6000);
 
 // G. Live question, shown at 2x.
-await page.locator(".answer").evaluate((el) => window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 76, behavior: "smooth" }));
+await page.locator(".composer").evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
 await wait(900);
 await page.locator("#question").fill("Who picked up the bottle?");
 await wait(1200);
@@ -158,8 +160,9 @@ await wait(7000);
 await page.locator(".answer-card").first().evaluate((el) => el.scrollIntoView({ block: "center" }));
 await caption("Asked 'Who took the bottle?', SceneTrace answers that the evidence does not establish an actor.");
 await wait(6000);
+await page.getByRole("button", { name: /Where was the bottle last seen/ }).click();
 await page.locator(".answer-card .blocked summary").click();
-await page.locator(".answer-card").last().evaluate((el) => el.scrollIntoView({ block: "center" }));
+await page.locator(".answer-card").evaluate((el) => el.scrollIntoView({ block: "center" }));
 await caption("A real failure in this run: Muse Wonder asked for more evidence on the last sighting, so a supported claim was withheld. Review can block a claim, never promote one.");
 await wait(8000);
 
@@ -174,7 +177,7 @@ await page.locator(".verify-result").waitFor();
 await page.locator(".verify-result").evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
 await wait(4000);
 await page.locator("#expected").fill("0".repeat(64));
-await page.locator(".verify form button").click();
+await page.locator(".verify-own button").click();
 await page.locator(".verify-result.failed").waitFor();
 await page.locator(".verify-result").evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
 await caption("Checked against a different head, verification fails. Integrity is not proof that the video or its interpretation is true.");

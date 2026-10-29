@@ -158,6 +158,28 @@ test("recorded demonstration replays with its labels and original cost", async (
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
 });
 
+test("cards that share a row share their top and bottom edges", async ({ page }, info) => {
+  test.skip(info.project.name === "phone", "rows only exist on wide layouts");
+  const edges = (selector: string) => page.locator(selector).evaluateAll((elements) => {
+    const boxes = elements.map((element) => element.getBoundingClientRect());
+    return { top: Math.round(Math.min(...boxes.map((box) => box.top))), bottom: Math.round(Math.max(...boxes.map((box) => box.bottom))) };
+  });
+  await page.goto("/");
+  await expect(page.locator(".upload-area > .clips")).toBeVisible();
+  expect(await edges(".upload-area > .upload")).toEqual(await edges(".upload-area > .clips"));
+  const demoButtons = await page.getByRole("button", { name: "Open recorded run" }).evaluateAll((buttons) => buttons.map((button) => Math.round(button.getBoundingClientRect().top)));
+  expect(new Set(demoButtons).size).toBe(1);
+  for (const index of [0, 1]) {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Open recorded run" }).nth(index).click();
+    await expect(page.locator(".answer-card")).toBeVisible();
+    expect(await edges(".area-video > .video-panel")).toEqual(await edges(".area-history > .panel"));
+    expect(await edges(".area-answer > .panel")).toEqual(await edges(".area-integrity > .panel, .area-usage > .panel"));
+    const history = page.locator(".area-history .history-scroll");
+    expect(await history.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+  }
+});
+
 test("overlay toggle and seeking across the occlusion", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Open recorded run" }).last().click();

@@ -28,7 +28,19 @@ export function shortHash(digest: string | null | undefined, length = 10): strin
 
 export function duration(ms: number | null | undefined): string {
   if (ms === null || ms === undefined) return "not recorded";
-  return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
+  if (ms < 1000) return `${ms} ms`;
+  if (ms < 59_950) return `${(ms / 1000).toFixed(1)} s`;
+  const wholeSeconds = Math.round(ms / 1000);
+  const minutes = Math.floor(wholeSeconds / 60);
+  const seconds = wholeSeconds % 60;
+  return seconds ? `${minutes} min ${seconds} s` : `${minutes} min`;
+}
+
+export function elapsed(ms: number): string {
+  const tenths = Math.round(ms / 100);
+  const minutes = Math.floor(tenths / 600);
+  const seconds = ((tenths % 600) / 10).toFixed(1).padStart(4, "0");
+  return `${minutes}:${seconds}`;
 }
 
 export function dateTime(iso: string | null | undefined): string {

@@ -109,7 +109,7 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
 
     return (
       <section className="video-panel" aria-label="Video with tracking overlays">
-        <div className="stage">
+        <div className="stage" style={width && height ? { aspectRatio: `${width} / ${height}` } : undefined}>
           <video
             ref={video}
             src={clip.video_url ?? undefined}

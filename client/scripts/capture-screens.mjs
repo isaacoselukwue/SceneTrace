@@ -48,7 +48,7 @@ if (owned) {
   await settle(desk, 500);
   await desk.locator(".integrity").screenshot({ path: `${out}/integrity-anchored.png` });
   await desk.locator("#expected").fill("0".repeat(64));
-  await desk.locator(".verify form button").click();
+  await desk.locator(".verify-own button").click();
   await desk.waitForSelector(".verify-result.failed");
   await desk.locator(".integrity").screenshot({ path: `${out}/integrity-wrong-anchor.png` });
 }

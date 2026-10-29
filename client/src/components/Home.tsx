@@ -4,6 +4,7 @@ import { candidateActors, describeEvent, sortedEvents } from "../lib/events";
 import { dateTime, duration, shortInterval, usd } from "../lib/format";
 import { StatusBadge } from "./Badges";
 import { Icon } from "./Icons";
+import { EmptyState, PanelHead } from "./PanelHead";
 
 export function Home({ session, capabilities, onSession, navigate }: {
   session: SessionOut | null;
@@ -129,7 +130,7 @@ function DemoCard({ demo, onOpen }: { demo: DemoOut; onOpen: () => void }) {
           {demo.media_kind === "synthetic_render" && <span className="badge tone-neutral">Synthetic test clip</span>}
         </div>
         <h3>{demo.title}</h3>
-        <p>{demo.description}</p>
+        <p className="demo-description">{demo.description}</p>
         <dl className="demo-meta">
           <div><dt>Recorded</dt><dd>{dateTime(demo.recorded_at)}</dd></div>
           <div><dt>Original cost</dt><dd>{usd(demo.original_processing_cost_microusd)}</dd></div>
@@ -147,13 +148,8 @@ function AccessForm({ onSession }: { onSession: (s: SessionOut) => void }) {
   const [error, setError] = useState<string | null>(null);
   return (
     <section className="panel access" aria-labelledby="access-title">
-      <div className="panel-head">
-        <span className="panel-icon"><Icon name="lock" /></span>
-        <div>
-          <h2 id="access-title">Owner access</h2>
-          <p className="muted">Uploads and paid analysis need the owner access code. The recorded investigations are open to everyone.</p>
-        </div>
-      </div>
+      <PanelHead icon="lock" titleId="access-title" title="Owner access"
+        description="Uploads and paid analysis need the owner access code. The recorded investigations are open to everyone." />
       <form className="input-row" onSubmit={async (e) => {
         e.preventDefault();
         try { onSession(await api.session(code)); } catch (err) { setError(err instanceof ApiError ? err.message : "Sign-in failed."); }
@@ -179,13 +175,8 @@ function UploadPanel({ capabilities, onUploaded }: { capabilities: CapabilitiesO
   const percent = progress === null ? 0 : Math.round(progress * 100);
   return (
     <section className="panel upload" aria-labelledby="upload-title">
-      <div className="panel-head">
-        <span className="panel-icon"><Icon name="upload" /></span>
-        <div>
-          <h2 id="upload-title">Upload a clip</h2>
-          <p className="muted">MP4 or MOV, up to {maxMb} MB and {maxS} s, from a fixed camera with at most {capabilities?.limits.max_supported_people ?? 6} people.</p>
-        </div>
-      </div>
+      <PanelHead icon="upload" titleId="upload-title" title="Upload a clip"
+        description={`MP4 or MOV, up to ${maxMb} MB and ${maxS} s, from a fixed camera with at most ${capabilities?.limits.max_supported_people ?? 6} people.`} />
       <form onSubmit={async (e) => {
         e.preventDefault();
         if (!file) return;
@@ -233,20 +224,18 @@ const CLIP_STATUS: Record<string, string> = { ready: "Ready", rejected: "Rejecte
 function ClipList({ clips, navigate }: { clips: ClipOut[]; navigate: (hash: string) => void }) {
   return (
     <section className="panel clips" aria-labelledby="clips-title">
-      <div className="panel-head">
-        <span className="panel-icon"><Icon name="layers" /></span>
-        <div>
-          <h2 id="clips-title">Your clips</h2>
-          <p className="muted">Private uploads and their analysis runs.</p>
-        </div>
-      </div>
-      {clips.length === 0 ? <p className="muted empty">No uploads yet. Your clips appear here after upload.</p> : (
+      <PanelHead icon="layers" titleId="clips-title" title="Your clips" description="Private uploads and their analysis runs."
+        aside={clips.length > 0 ? `${clips.length} clip${clips.length === 1 ? "" : "s"}` : undefined} />
+      {clips.length === 0 ? (
+        <EmptyState icon="film" title="No clips yet">Uploaded clips and their runs appear here. Uploads expire after 24 hours.</EmptyState>
+      ) : (
         <ul className="clip-list">
           {clips.map((c) => (
             <li key={c.clip_id}>
               <button type="button" className="clip-row" onClick={() => navigate(`#/clip/${c.clip_id}`)}>
+                <ClipThumbnail clip={c} />
                 <span className="clip-text">
-                  <span className="clip-name">{c.display_name}</span>
+                  <span className="clip-name" title={c.display_name}>{c.display_name}</span>
                   <span className="clip-meta">
                     {duration(c.duration_ms)} · {c.analyses.length} run{c.analyses.length === 1 ? "" : "s"}
                     {c.media_kind === "synthetic_render" ? " · synthetic test clip" : ""} · expires {dateTime(c.expires_at)}
@@ -260,6 +249,25 @@ function ClipList({ clips, navigate }: { clips: ClipOut[]; navigate: (hash: stri
           ))}
         </ul>
       )}
+      {clips.length > 0 && (
+        <p className="fineprint panel-foot">Open a clip to follow another object in it or to revisit its runs. Clips expire 24 hours after upload.</p>
+      )}
     </section>
+  );
+}
+
+function ClipThumbnail({ clip }: { clip: ClipOut }) {
+  const [image, setImage] = useState<string | null>(null);
+  const ready = clip.status === "ready" && Boolean(clip.duration_ms);
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    api.frame(clip.clip_id, (clip.duration_ms ?? 0) / 2).then((f) => !cancelled && setImage(f.image_url)).catch(() => setImage(null));
+    return () => { cancelled = true; };
+  }, [clip.clip_id, clip.duration_ms, ready]);
+  return (
+    <span className="clip-thumb" aria-hidden="true">
+      {image ? <img src={image} alt="" /> : <Icon name="film" size={18} />}
+    </span>
   );
 }
