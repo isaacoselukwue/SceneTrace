@@ -36,6 +36,8 @@ from . import views
 
 API = "/api/v1"
 CLIENT_DIST = Path(__file__).resolve().parents[2] / "client" / "dist"
+CLIENT_MEDIA_TYPES = {".woff2": "font/woff2", ".woff": "font/woff", ".js": "text/javascript", ".css": "text/css",
+                      ".svg": "image/svg+xml", ".json": "application/json"}
 log = logs.get("api")
 
 
@@ -678,7 +680,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                 raise not_found()
             candidate = (CLIENT_DIST / path).resolve()
             if path and candidate.is_file() and CLIENT_DIST.resolve() in candidate.parents:
-                return FileResponse(candidate)
+                return FileResponse(candidate, media_type=CLIENT_MEDIA_TYPES.get(candidate.suffix))
             return FileResponse(CLIENT_DIST / "index.html", headers={"Cache-Control": "no-cache"})
 
     return app

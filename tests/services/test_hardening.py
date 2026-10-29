@@ -158,3 +158,20 @@ def test_injected_assessor_output_is_invalid_not_trusted(tmp_path: Path) -> None
                                 evidence_ids=["V99"], verdict="supports", reason_codes=["CLEAR_LIFT"])
     problems = semantic_problems(injected, candidate, frames=[], persons={"P1"}, zones=set())
     assert {"UNKNOWN_EVIDENCE_ID", "UNKNOWN_ACTOR_ID", "UNKNOWN_ZONE_ID"} <= set(problems)
+
+
+def test_client_assets_are_served_with_explicit_types(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import scenetrace.api.app as app_module
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<!doctype html><title>SceneTrace</title>")
+    (dist / "assets" / "inter.woff2").write_bytes(b"wOF2")
+    (dist / "assets" / "index.js").write_text("export {};")
+    monkeypatch.setattr(app_module, "CLIENT_DIST", dist)
+    with TestClient(create_app(_settings(tmp_path))) as client:
+        assert client.get("/assets/inter.woff2").headers["content-type"] == "font/woff2"
+        assert client.get("/assets/index.js").headers["content-type"].startswith("text/javascript")
+        (tmp_path / "outside.txt").write_text("private outside the client directory")
+        escaped = client.get("/assets/%2e%2e/%2e%2e/outside.txt")
+        assert "private outside" not in escaped.text and escaped.text.startswith("<!doctype html>")
+        assert client.get("/analysis/route").text.startswith("<!doctype html>")

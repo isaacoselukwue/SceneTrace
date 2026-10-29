@@ -87,7 +87,7 @@ The reviewer misses changes it cannot see (one-second time shifts, superseded re
 
 **Token counting for video.** `POST /v1/responses/input_tokens` counted 384 input tokens for each whole-video request, while the provider billed 4,271 and 5,311: the count does not include video tokens. SceneTrace therefore adds 600 tokens per second of video to the reservation for video requests, which covered the billed input in both runs. For image requests the count is an upper bound (881 counted, 670 billed).
 
-**Software checks.** 86 Python tests pass (2 opt-in live tests skipped by default), including an offline replay of both recorded demonstrations, plus 53 tests of the core claim, budget and integrity modules, 7 client unit tests and 10 browser test runs across desktop and phone viewports, one of which drives the whole flow on a phone with touch input. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
+**Software checks.** 87 Python tests pass (2 opt-in live tests skipped by default), including an offline replay of both recorded demonstrations, plus 53 tests of the core claim, budget and integrity modules, 7 client unit tests and 10 browser test runs across desktop and phone viewports, one of which drives the whole flow on a phone with touch input. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
 
 ## Run it
 
