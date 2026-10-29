@@ -205,14 +205,22 @@ def test_real_truncated_stream_is_unknown_not_absent(db, settings: Settings) -> 
     assert row["cost_status"] == "unknown"  # no terminal usage: the reservation is retained
 
 
+def test_tracking_requests_opt_out_of_provider_storage(db, settings: Settings) -> None:
+    _target, _person, transport, _ctx = hero_tracking(db, settings)
+    requests = [call for call in transport.calls if "model" in call]
+    assert len(requests) == 2 and all(call["store"] is False for call in requests)
+
+
 def test_real_selection_on_image(db, settings: Settings) -> None:
     from scenetrace.providers.meta_sam import MetaSamTracker
 
     from .support import FakeSamTransport, make_ctx
-    tracker = MetaSamTracker(transport=FakeSamTransport(), settings=settings, db=db)
+    transport = FakeSamTransport()
+    tracker = MetaSamTracker(transport=transport, settings=settings, db=db)
     found = tracker.select_instances(make_ctx(db, settings), image_png=b"\x89PNG", width=960, height=540, phrase="bottle",
                                      proxy_frame_index=10)
     assert len(found) == 1 and found[0].box == [512, 361, 528, 404] and found[0].confidence_bp == 9024
+    assert transport.calls[-1]["store"] is False
 
 
 def test_real_evidence_extraction_from_sample_clip(db, settings: Settings, tmp_path: Path) -> None:

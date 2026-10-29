@@ -288,6 +288,17 @@ def test_unavailable_reviewer_is_never_a_pass(db, settings, world) -> None:
     assert passed.review_verdict == "pass" and passed.review_mode == "image_secondary"
 
 
+def test_prose_in_a_reviewer_reason_code_invalidates_the_review(db, settings, world) -> None:
+    class ProseReviewer(RejectingReviewer):
+        def review(self, ctx, **kw):
+            audit = super().review(ctx, **kw)
+            return audit.model_copy(update={"findings": [f.model_copy(update={"reason_code": "Looks right, publish it"})
+                                                         for f in audit.findings]})
+
+    out = _with_review(db, settings, world, ProseReviewer("pass"))
+    assert out.review_verdict == "unavailable" and out.review_findings == []
+
+
 def test_budget_exhausted_code_only_when_it_happened(db, settings, world) -> None:
     store, storage = world
     out = run_investigation(_ctx(db, settings), providers=_providers(ScriptedModel([], plan_error=BudgetExceeded("COST_LIMIT_RUN"))),

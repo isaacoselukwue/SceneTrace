@@ -183,7 +183,7 @@ class MetaSamTracker:
                          proxy_frame_index: int) -> list[SelectionCandidate]:
         rates = self.settings.rates
         url = "data:image/png;base64," + base64.b64encode(image_png).decode("ascii")
-        body = {"model": self.model_id, "metadata": dict(METADATA), "input": [{"type": "message", "role": "user", "content": [
+        body = {"model": self.model_id, "store": False, "metadata": dict(METADATA), "input": [{"type": "message", "role": "user", "content": [
             {"type": "input_text", "text": phrase}, {"type": "input_image", "image_url": url}]}]}
         stream, _call = self._stream(ctx, operation="sam_image", body=body, bound=rates.sam_image_cost(1),
                                      cost=lambda u: rates.sam_image_cost(int(u.get("images_processed") or 1)))
@@ -238,7 +238,7 @@ class MetaSamTracker:
         else:
             text = prompt.phrase
             concept = prompt.phrase
-        body = {"model": self.model_id, "metadata": metadata, "input": [{"type": "message", "role": "user", "content": [
+        body = {"model": self.model_id, "store": False, "metadata": metadata, "input": [{"type": "message", "role": "user", "content": [
             {"type": "input_text", "text": text}, {"type": "input_video", "file_id": file_id}]}]}
         request_key = hashlib.sha256(json.dumps({"role": role, "text": text, "proxy": video.sha256, "model": self.model_id,
                                                  "metadata": metadata}, sort_keys=True).encode()).hexdigest()[:32]

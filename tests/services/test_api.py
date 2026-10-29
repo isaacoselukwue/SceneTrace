@@ -274,3 +274,24 @@ def test_replay_transport_never_touches_the_network(tmp_path: Path, monkeypatch:
     with pytest.raises(RecordingMiss):
         replay.create_response({"model": "m", "input": "different"})
     shutil.rmtree(tmp_path / "rec")
+
+
+def test_replay_serves_requests_recorded_before_they_opted_out_of_provider_storage(tmp_path: Path) -> None:
+    from scenetrace.providers.base import RecordingMiss
+    from scenetrace.providers.recording import Recording, RecordingTransport, ReplayTransport
+    from scenetrace.providers.transport import StreamResult
+
+    completed = {"type": "response.completed", "response": {"id": "resp_sam", "usage": {"images_processed": 1}}}
+
+    class Fake:
+        def stream_response(self, body, *, cancel=None, on_event=None):
+            return StreamResult(200, [completed], "response.completed", completed["response"], "resp_sam",
+                                completed["response"]["usage"], "req-sam", 4)
+
+    rec = Recording(tmp_path / "rec")
+    request_without_flag = {"model": "sam-3.1", "input": "bottle"}
+    RecordingTransport(Fake(), rec).stream_response(request_without_flag)  # type: ignore[arg-type]
+    replay = ReplayTransport(rec)
+    assert replay.stream_response(dict(request_without_flag, store=False)).response_id == "resp_sam"
+    with pytest.raises(RecordingMiss):
+        replay.stream_response(dict(request_without_flag, store=False, input="person"))

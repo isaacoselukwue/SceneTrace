@@ -2,6 +2,7 @@
 A missing or broken reviewer is reported as not_run or unavailable, never as passed."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -12,6 +13,8 @@ from ..providers.meta_muse import load_frames
 from ..providers.schemas import StructuredOutputError
 from ..storage import Storage
 from ..store import AnalysisStore
+
+REASON_CODE = re.compile(r"[A-Z][A-Z0-9_]{0,63}")
 
 
 @dataclass
@@ -50,8 +53,9 @@ def run_review(ctx: RunContext, *, providers: ProviderSet, store: AnalysisStore,
         return ReviewOutcome(mode=mode, verdict="unavailable")
     claim_ids = {c.claim_id for c in claims}
     shown = {i.evidence.evidence_id for i in raw}
-    if any(f.claim_id not in claim_ids or not set(f.evidence_ids) <= shown for f in audit.findings):
-        return ReviewOutcome(mode=mode, verdict="unavailable")  # unknown IDs make the review invalid, not a pass
+    if any(f.claim_id not in claim_ids or not set(f.evidence_ids) <= shown or not REASON_CODE.fullmatch(f.reason_code)
+           for f in audit.findings):
+        return ReviewOutcome(mode=mode, verdict="unavailable")  # unknown IDs or prose codes make the review invalid, not a pass
     by_claim = {f.claim_id: f for f in audit.findings}
     outcome = ReviewOutcome(mode=mode, findings=[f.model_dump() for f in audit.findings])
     for claim_id in claim_ids:

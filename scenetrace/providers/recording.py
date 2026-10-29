@@ -8,6 +8,10 @@ replay modes; a replay miss raises RecordingMiss instead of calling a model.
 
 Ledger handling: adapters call `dispatch_call`, which meters live attempts
 through `metered_call` and writes zero-cost `replayed` ledger rows in replay.
+
+Every request opts out of provider-side storage with `store: false`. SAM requests
+recorded before they carried that flag were indexed without it; the flag only
+controls retention, so replay falls back to the digest without it.
 """
 from __future__ import annotations
 
@@ -76,6 +80,9 @@ class Recording:
             with self.index_path.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(entry, sort_keys=True) + "\n")
 
+    def has(self, kind: str, digest: str) -> bool:
+        return any(e["kind"] == kind and e["digest"] == digest for e in self.entries())
+
     def lookup(self, kind: str, digest: str, *, occurrence: int) -> tuple[dict[str, Any], Any]:
         matches = [e for e in self.entries() if e["kind"] == kind and e["digest"] == digest]
         if occurrence >= len(matches):
@@ -133,30 +140,33 @@ class ReplayTransport:
         self._seen: dict[str, int] = {}
         self._lock = threading.Lock()
 
-    def _next(self, kind: str, digest: str) -> tuple[dict[str, Any], Any]:
+    def _next(self, kind: str, body: dict[str, Any]) -> tuple[dict[str, Any], Any]:
+        digest = body_digest(kind, body)
+        if "store" in body and not self.recording.has(kind, digest):
+            digest = body_digest(kind, {key: value for key, value in body.items() if key != "store"})
         with self._lock:
             occurrence = self._seen.get(kind + digest, 0)
             self._seen[kind + digest] = occurrence + 1
         return self.recording.lookup(kind, digest, occurrence=occurrence)
 
     def upload_file(self, path: Path, *, media_type: str, expires_after_s: int | None = None) -> HTTPResult:
-        entry, data = self._next("files.upload", body_digest("files.upload", {"sha256": hashlib.sha256(path.read_bytes()).hexdigest()}))
+        entry, data = self._next("files.upload", {"sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
         return HTTPResult(entry["status"], data, entry.get("request_id"), 0)
 
     def delete_file(self, file_id: str) -> int:
         return 200  # nothing remote exists for a replay
 
     def count_input_tokens(self, body: dict[str, Any]) -> HTTPResult:
-        entry, data = self._next("responses.input_tokens", body_digest("responses.input_tokens", body))
+        entry, data = self._next("responses.input_tokens", body)
         return HTTPResult(entry["status"], data, entry.get("request_id"), 0)
 
     def create_response(self, body: dict[str, Any]) -> HTTPResult:
-        entry, data = self._next("responses.create", body_digest("responses.create", body))
+        entry, data = self._next("responses.create", body)
         return HTTPResult(entry["status"], data, entry.get("request_id"), 0)
 
     def stream_response(self, body: dict[str, Any], *, cancel: CancelToken | None = None,
                         on_event: Callable[[dict[str, Any]], None] | None = None) -> StreamResult:
-        entry, data = self._next("responses.stream", body_digest("responses.stream", dict(body, stream=True)))
+        entry, data = self._next("responses.stream", dict(body, stream=True))
         events = data["events"]
         for event in events:
             if on_event is not None:
