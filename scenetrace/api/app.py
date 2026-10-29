@@ -553,6 +553,9 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                     if batch[-1]["type"] in ("job.completed", "job.partial", "job.failed", "job.cancelled", "job.needs_selection"):
                         return
                     continue
+                state = await asyncio.to_thread(lambda: svc.db.one("SELECT state FROM jobs WHERE id = ?", (job_id,))["state"])
+                if state in ("completed", "partial", "failed", "cancelled", "interrupted", "needs_selection"):
+                    return  # nothing newer to send for a finished job
                 await asyncio.sleep(0.25)
                 idle += 0.25
                 if idle >= 15:

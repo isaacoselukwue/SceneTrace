@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -12,7 +13,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     serve = sub.add_parser("serve", help="Run the API, worker and built client in one process")
     serve.add_argument("--host", default=None)
-    serve.add_argument("--port", type=int, default=8000)
+    serve.add_argument("--port", type=int, default=int(os.environ.get("SCENETRACE_PORT", "8765")))
     verify = sub.add_parser("verify", help="Verify an extracted evidence bundle against a separately trusted head")
     verify.add_argument("bundle", type=Path)
     verify.add_argument("--expected-head")

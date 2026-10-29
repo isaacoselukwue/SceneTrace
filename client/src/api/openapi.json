@@ -1,0 +1,4292 @@
+{
+ "components": {
+  "schemas": {
+   "AnalysisCreate": {
+    "additionalProperties": false,
+    "properties": {
+     "idempotency_key": {
+      "maxLength": 80,
+      "minLength": 8,
+      "pattern": "^[A-Za-z0-9_\\-]+$",
+      "title": "Idempotency Key",
+      "type": "string"
+     },
+     "mode": {
+      "enum": [
+       "fixture",
+       "recorded_real",
+       "live"
+      ],
+      "title": "Mode",
+      "type": "string"
+     },
+     "target": {
+      "discriminator": {
+       "mapping": {
+        "box": "#/components/schemas/TargetBoxIn",
+        "concept": "#/components/schemas/TargetConceptIn"
+       },
+       "propertyName": "kind"
+      },
+      "oneOf": [
+       {
+        "$ref": "#/components/schemas/TargetConceptIn"
+       },
+       {
+        "$ref": "#/components/schemas/TargetBoxIn"
+       }
+      ],
+      "title": "Target"
+     },
+     "zones": {
+      "items": {
+       "$ref": "#/components/schemas/ZoneIn"
+      },
+      "maxItems": 4,
+      "title": "Zones",
+      "type": "array"
+     }
+    },
+    "required": [
+     "target",
+     "mode",
+     "idempotency_key"
+    ],
+    "title": "AnalysisCreate",
+    "type": "object"
+   },
+   "AnalysisOut": {
+    "additionalProperties": false,
+    "properties": {
+     "analysis_id": {
+      "title": "Analysis Id",
+      "type": "string"
+     },
+     "assessments": {
+      "items": {
+       "$ref": "#/components/schemas/AssessmentOut"
+      },
+      "title": "Assessments",
+      "type": "array"
+     },
+     "candidates": {
+      "items": {
+       "$ref": "#/components/schemas/CandidateOut"
+      },
+      "title": "Candidates",
+      "type": "array"
+     },
+     "clip_id": {
+      "title": "Clip Id",
+      "type": "string"
+     },
+     "completed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Completed At"
+     },
+     "coverage": {
+      "items": {
+       "$ref": "#/components/schemas/CoverageOut"
+      },
+      "title": "Coverage",
+      "type": "array"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "demo": {
+      "title": "Demo",
+      "type": "boolean"
+     },
+     "entities": {
+      "items": {
+       "$ref": "#/components/schemas/EntityOut"
+      },
+      "title": "Entities",
+      "type": "array"
+     },
+     "events": {
+      "items": {
+       "$ref": "#/components/schemas/EventOut"
+      },
+      "title": "Events",
+      "type": "array"
+     },
+     "evidence": {
+      "items": {
+       "$ref": "#/components/schemas/EvidenceOut"
+      },
+      "title": "Evidence",
+      "type": "array"
+     },
+     "job_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Job Id"
+     },
+     "media_kind": {
+      "enum": [
+       "user_upload",
+       "synthetic_render",
+       "fixture"
+      ],
+      "title": "Media Kind",
+      "type": "string"
+     },
+     "partial_reasons": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Partial Reasons",
+      "type": "array"
+     },
+     "provenance": {
+      "$ref": "#/components/schemas/ProvenanceOut"
+     },
+     "run_mode": {
+      "enum": [
+       "fixture",
+       "recorded_real",
+       "live"
+      ],
+      "title": "Run Mode",
+      "type": "string"
+     },
+     "selections": {
+      "items": {
+       "$ref": "#/components/schemas/SelectionOut"
+      },
+      "title": "Selections",
+      "type": "array"
+     },
+     "source_sha256": {
+      "title": "Source Sha256",
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "queued",
+       "running",
+       "needs_selection",
+       "completed",
+       "partial",
+       "failed",
+       "cancelled",
+       "interrupted"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "target": {
+      "additionalProperties": true,
+      "title": "Target",
+      "type": "object"
+     },
+     "timings_ms": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Timings Ms",
+      "type": "object"
+     },
+     "usage": {
+      "$ref": "#/components/schemas/UsageOut"
+     },
+     "zones": {
+      "items": {
+       "$ref": "#/components/schemas/EntityOut"
+      },
+      "title": "Zones",
+      "type": "array"
+     }
+    },
+    "required": [
+     "analysis_id",
+     "clip_id",
+     "job_id",
+     "status",
+     "run_mode",
+     "media_kind",
+     "source_sha256",
+     "target",
+     "zones",
+     "selections",
+     "entities",
+     "events",
+     "candidates",
+     "evidence",
+     "assessments",
+     "coverage",
+     "provenance",
+     "usage",
+     "timings_ms",
+     "partial_reasons",
+     "created_at",
+     "completed_at",
+     "demo"
+    ],
+    "title": "AnalysisOut",
+    "type": "object"
+   },
+   "AnswerSentenceOut": {
+    "additionalProperties": false,
+    "properties": {
+     "certainty": {
+      "anyOf": [
+       {
+        "enum": [
+         "supported",
+         "possible"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Certainty"
+     },
+     "citation": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/CitationOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "kind": {
+      "enum": [
+       "claim",
+       "unknown",
+       "scope"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "text",
+     "kind",
+     "certainty",
+     "citation"
+    ],
+    "title": "AnswerSentenceOut",
+    "type": "object"
+   },
+   "AssessmentOut": {
+    "additionalProperties": false,
+    "properties": {
+     "assessment_id": {
+      "title": "Assessment Id",
+      "type": "string"
+     },
+     "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "model_id": {
+      "title": "Model Id",
+      "type": "string"
+     },
+     "purpose": {
+      "title": "Purpose",
+      "type": "string"
+     },
+     "result": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Result"
+     },
+     "run_mode": {
+      "enum": [
+       "fixture",
+       "recorded_real",
+       "live"
+      ],
+      "title": "Run Mode",
+      "type": "string"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "assessment_id",
+     "candidate_id",
+     "purpose",
+     "model_id",
+     "run_mode",
+     "status",
+     "result",
+     "created_at"
+    ],
+    "title": "AssessmentOut",
+    "type": "object"
+   },
+   "CandidateOut": {
+    "additionalProperties": false,
+    "properties": {
+     "actor_candidates": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Actor Candidates",
+      "type": "array"
+     },
+     "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+     },
+     "candidate_type": {
+      "title": "Candidate Type",
+      "type": "string"
+     },
+     "cues": {
+      "additionalProperties": true,
+      "title": "Cues",
+      "type": "object"
+     },
+     "event_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Event Id"
+     },
+     "evidence_ids": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Evidence Ids",
+      "type": "array"
+     },
+     "outcome": {
+      "enum": [
+       "supported",
+       "plausible",
+       "contested",
+       "rejected",
+       "pending"
+      ],
+      "title": "Outcome",
+      "type": "string"
+     },
+     "reason_codes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+     },
+     "t_end_ms": {
+      "title": "T End Ms",
+      "type": "integer"
+     },
+     "t_start_ms": {
+      "title": "T Start Ms",
+      "type": "integer"
+     },
+     "window_end_ms": {
+      "title": "Window End Ms",
+      "type": "integer"
+     },
+     "window_start_ms": {
+      "title": "Window Start Ms",
+      "type": "integer"
+     },
+     "zone_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Zone Id"
+     }
+    },
+    "required": [
+     "candidate_id",
+     "candidate_type",
+     "t_start_ms",
+     "t_end_ms",
+     "window_start_ms",
+     "window_end_ms",
+     "actor_candidates",
+     "zone_id",
+     "reason_codes",
+     "evidence_ids",
+     "cues",
+     "event_id",
+     "outcome"
+    ],
+    "title": "CandidateOut",
+    "type": "object"
+   },
+   "CapabilitiesOut": {
+    "additionalProperties": false,
+    "properties": {
+     "available_run_modes": {
+      "items": {
+       "enum": [
+        "fixture",
+        "recorded_real",
+        "live"
+       ],
+       "type": "string"
+      },
+      "title": "Available Run Modes",
+      "type": "array"
+     },
+     "build": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "title": "Build",
+      "type": "object"
+     },
+     "default_run_mode": {
+      "enum": [
+       "fixture",
+       "recorded_real",
+       "live"
+      ],
+      "title": "Default Run Mode",
+      "type": "string"
+     },
+     "demo_read_only": {
+      "title": "Demo Read Only",
+      "type": "boolean"
+     },
+     "limits": {
+      "$ref": "#/components/schemas/LimitsOut"
+     },
+     "live_available": {
+      "title": "Live Available",
+      "type": "boolean"
+     },
+     "live_block_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Live Block Reason"
+     },
+     "models": {
+      "items": {
+       "$ref": "#/components/schemas/ModelCapabilityOut"
+      },
+      "title": "Models",
+      "type": "array"
+     },
+     "project_owner": {
+      "title": "Project Owner",
+      "type": "string"
+     },
+     "review_mode": {
+      "enum": [
+       "image_secondary",
+       "text_secondary",
+       "not_run"
+      ],
+      "title": "Review Mode",
+      "type": "string"
+     }
+    },
+    "required": [
+     "project_owner",
+     "default_run_mode",
+     "available_run_modes",
+     "live_available",
+     "live_block_reason",
+     "review_mode",
+     "models",
+     "limits",
+     "demo_read_only",
+     "build"
+    ],
+    "title": "CapabilitiesOut",
+    "type": "object"
+   },
+   "CitationOut": {
+    "additionalProperties": false,
+    "properties": {
+     "claim_id": {
+      "title": "Claim Id",
+      "type": "string"
+     },
+     "event_id": {
+      "title": "Event Id",
+      "type": "string"
+     },
+     "event_revision": {
+      "title": "Event Revision",
+      "type": "integer"
+     },
+     "evidence_ids": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Evidence Ids",
+      "type": "array"
+     },
+     "t_end_ms": {
+      "title": "T End Ms",
+      "type": "integer"
+     },
+     "t_start_ms": {
+      "title": "T Start Ms",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "claim_id",
+     "event_id",
+     "event_revision",
+     "t_start_ms",
+     "t_end_ms",
+     "evidence_ids"
+    ],
+    "title": "CitationOut",
+    "type": "object"
+   },
+   "Claim": {
+    "additionalProperties": false,
+    "properties": {
+     "actor_id": {
+      "anyOf": [
+       {
+        "pattern": "^(O|P|Z)[1-9][0-9]*$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Actor Id"
+     },
+     "certainty": {
+      "enum": [
+       "supported",
+       "possible"
+      ],
+      "title": "Certainty",
+      "type": "string"
+     },
+     "claim_id": {
+      "pattern": "^C[1-9][0-9]*$",
+      "title": "Claim Id",
+      "type": "string"
+     },
+     "event_id": {
+      "pattern": "^E[1-9][0-9]*$",
+      "title": "Event Id",
+      "type": "string"
+     },
+     "event_revision": {
+      "minimum": 1.0,
+      "title": "Event Revision",
+      "type": "integer"
+     },
+     "object_id": {
+      "pattern": "^(O|P|Z)[1-9][0-9]*$",
+      "title": "Object Id",
+      "type": "string"
+     },
+     "predicate": {
+      "enum": [
+       "first_seen",
+       "pick_up",
+       "put_down",
+       "place_in_zone",
+       "last_seen"
+      ],
+      "title": "Predicate",
+      "type": "string"
+     },
+     "t_end_ms": {
+      "minimum": 0.0,
+      "title": "T End Ms",
+      "type": "integer"
+     },
+     "t_start_ms": {
+      "minimum": 0.0,
+      "title": "T Start Ms",
+      "type": "integer"
+     },
+     "zone_id": {
+      "anyOf": [
+       {
+        "pattern": "^(O|P|Z)[1-9][0-9]*$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Zone Id"
+     }
+    },
+    "required": [
+     "claim_id",
+     "event_id",
+     "event_revision",
+     "object_id",
+     "predicate",
+     "actor_id",
+     "zone_id",
+     "t_start_ms",
+     "t_end_ms",
+     "certainty"
+    ],
+    "title": "Claim",
+    "type": "object"
+   },
+   "ClipOut": {
+    "additionalProperties": false,
+    "properties": {
+     "analyses": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Analyses",
+      "type": "array"
+     },
+     "clip_id": {
+      "title": "Clip Id",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "demo": {
+      "title": "Demo",
+      "type": "boolean"
+     },
+     "display_name": {
+      "title": "Display Name",
+      "type": "string"
+     },
+     "duration_ms": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duration Ms"
+     },
+     "expires_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expires At"
+     },
+     "media_kind": {
+      "enum": [
+       "user_upload",
+       "synthetic_render",
+       "fixture"
+      ],
+      "title": "Media Kind",
+      "type": "string"
+     },
+     "normalise_job_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Normalise Job Id"
+     },
+     "proxy_fps": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Proxy Fps"
+     },
+     "proxy_frame_count": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Proxy Frame Count"
+     },
+     "proxy_height": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Proxy Height"
+     },
+     "proxy_width": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Proxy Width"
+     },
+     "reject_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reject Code"
+     },
+     "rotation_deg": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rotation Deg"
+     },
+     "source_bytes": {
+      "title": "Source Bytes",
+      "type": "integer"
+     },
+     "source_height": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Height"
+     },
+     "source_sha256": {
+      "title": "Source Sha256",
+      "type": "string"
+     },
+     "source_width": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Width"
+     },
+     "status": {
+      "enum": [
+       "uploaded",
+       "normalising",
+       "ready",
+       "rejected",
+       "failed",
+       "deleted",
+       "expired"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "video_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Video Url"
+     }
+    },
+    "required": [
+     "clip_id",
+     "status",
+     "media_kind",
+     "display_name",
+     "source_sha256",
+     "source_bytes",
+     "duration_ms",
+     "source_width",
+     "source_height",
+     "rotation_deg",
+     "proxy_width",
+     "proxy_height",
+     "proxy_fps",
+     "proxy_frame_count",
+     "video_url",
+     "reject_code",
+     "normalise_job_id",
+     "analyses",
+     "created_at",
+     "expires_at",
+     "demo"
+    ],
+    "title": "ClipOut",
+    "type": "object"
+   },
+   "CoverageOut": {
+    "additionalProperties": false,
+    "properties": {
+     "concept": {
+      "title": "Concept",
+      "type": "string"
+     },
+     "missing_ranges_ms": {
+      "items": {
+       "items": {
+        "type": "integer"
+       },
+       "type": "array"
+      },
+      "title": "Missing Ranges Ms",
+      "type": "array"
+     },
+     "request_key": {
+      "title": "Request Key",
+      "type": "string"
+     },
+     "requested_end_ms": {
+      "title": "Requested End Ms",
+      "type": "integer"
+     },
+     "requested_start_ms": {
+      "title": "Requested Start Ms",
+      "type": "integer"
+     },
+     "role": {
+      "title": "Role",
+      "type": "string"
+     },
+     "terminal_status": {
+      "enum": [
+       "completed",
+       "incomplete",
+       "failed",
+       "not_run"
+      ],
+      "title": "Terminal Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "request_key",
+     "role",
+     "concept",
+     "requested_start_ms",
+     "requested_end_ms",
+     "terminal_status",
+     "missing_ranges_ms"
+    ],
+    "title": "CoverageOut",
+    "type": "object"
+   },
+   "DemoOut": {
+    "additionalProperties": false,
+    "properties": {
+     "analysis_id": {
+      "title": "Analysis Id",
+      "type": "string"
+     },
+     "clip_id": {
+      "title": "Clip Id",
+      "type": "string"
+     },
+     "cost_status": {
+      "enum": [
+       "estimated",
+       "provider_usage_based",
+       "unknown",
+       "replayed",
+       "none"
+      ],
+      "title": "Cost Status",
+      "type": "string"
+     },
+     "demo_id": {
+      "title": "Demo Id",
+      "type": "string"
+     },
+     "description": {
+      "title": "Description",
+      "type": "string"
+     },
+     "media_kind": {
+      "enum": [
+       "user_upload",
+       "synthetic_render",
+       "fixture"
+      ],
+      "title": "Media Kind",
+      "type": "string"
+     },
+     "models": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Models",
+      "type": "object"
+     },
+     "original_processing_cost_microusd": {
+      "title": "Original Processing Cost Microusd",
+      "type": "integer"
+     },
+     "poster_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Poster Url"
+     },
+     "questions": {
+      "items": {
+       "$ref": "#/components/schemas/RecordedQuestionOut"
+      },
+      "title": "Questions",
+      "type": "array"
+     },
+     "recorded_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recorded At"
+     },
+     "run_mode": {
+      "const": "recorded_real",
+      "title": "Run Mode",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     }
+    },
+    "required": [
+     "demo_id",
+     "title",
+     "description",
+     "analysis_id",
+     "clip_id",
+     "media_kind",
+     "run_mode",
+     "recorded_at",
+     "models",
+     "original_processing_cost_microusd",
+     "cost_status",
+     "questions",
+     "poster_url"
+    ],
+    "title": "DemoOut",
+    "type": "object"
+   },
+   "EntityOut": {
+    "additionalProperties": false,
+    "properties": {
+     "entity_id": {
+      "title": "Entity Id",
+      "type": "string"
+     },
+     "first_t_ms": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First T Ms"
+     },
+     "identity_warning": {
+      "title": "Identity Warning",
+      "type": "boolean"
+     },
+     "kind": {
+      "enum": [
+       "object",
+       "person",
+       "zone"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "last_t_ms": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last T Ms"
+     },
+     "polygon": {
+      "anyOf": [
+       {
+        "items": {
+         "items": {
+          "type": "integer"
+         },
+         "type": "array"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Polygon"
+     }
+    },
+    "required": [
+     "entity_id",
+     "kind",
+     "label",
+     "first_t_ms",
+     "last_t_ms",
+     "identity_warning"
+    ],
+    "title": "EntityOut",
+    "type": "object"
+   },
+   "ErrorBody": {
+    "additionalProperties": false,
+    "properties": {
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "request_id": {
+      "title": "Request Id",
+      "type": "string"
+     },
+     "retryable": {
+      "title": "Retryable",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "code",
+     "message",
+     "retryable",
+     "request_id"
+    ],
+    "title": "ErrorBody",
+    "type": "object"
+   },
+   "EventOut": {
+    "additionalProperties": false,
+    "properties": {
+     "candidate_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Candidate Id"
+     },
+     "current": {
+      "$ref": "#/components/schemas/EventRevisionOut"
+     },
+     "history": {
+      "items": {
+       "$ref": "#/components/schemas/EventRevisionOut"
+      },
+      "title": "History",
+      "type": "array"
+     },
+     "status_meaning": {
+      "title": "Status Meaning",
+      "type": "string"
+     }
+    },
+    "required": [
+     "current",
+     "history",
+     "candidate_id",
+     "status_meaning"
+    ],
+    "title": "EventOut",
+    "type": "object"
+   },
+   "EventRecord": {
+    "additionalProperties": false,
+    "properties": {
+     "actor_id": {
+      "anyOf": [
+       {
+        "pattern": "^(O|P|Z)[1-9][0-9]*$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Actor Id"
+     },
+     "event_id": {
+      "pattern": "^E[1-9][0-9]*$",
+      "title": "Event Id",
+      "type": "string"
+     },
+     "event_type": {
+      "enum": [
+       "first_seen",
+       "pick_up",
+       "put_down",
+       "place_in_zone",
+       "last_seen"
+      ],
+      "title": "Event Type",
+      "type": "string"
+     },
+     "evidence_ids": {
+      "items": {
+       "pattern": "^V[1-9][0-9]*$",
+       "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Ids",
+      "type": "array"
+     },
+     "object_id": {
+      "pattern": "^(O|P|Z)[1-9][0-9]*$",
+      "title": "Object Id",
+      "type": "string"
+     },
+     "reason_codes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+     },
+     "revision": {
+      "minimum": 1.0,
+      "title": "Revision",
+      "type": "integer"
+     },
+     "status": {
+      "enum": [
+       "supported",
+       "plausible",
+       "contested",
+       "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "t_end_ms": {
+      "minimum": 0.0,
+      "title": "T End Ms",
+      "type": "integer"
+     },
+     "t_start_ms": {
+      "minimum": 0.0,
+      "title": "T Start Ms",
+      "type": "integer"
+     },
+     "zone_id": {
+      "anyOf": [
+       {
+        "pattern": "^(O|P|Z)[1-9][0-9]*$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Zone Id"
+     }
+    },
+    "required": [
+     "event_id",
+     "revision",
+     "object_id",
+     "event_type",
+     "actor_id",
+     "zone_id",
+     "t_start_ms",
+     "t_end_ms",
+     "status",
+     "evidence_ids",
+     "reason_codes"
+    ],
+    "title": "EventRecord",
+    "type": "object"
+   },
+   "EventRevisionOut": {
+    "additionalProperties": false,
+    "properties": {
+     "basis": {
+      "additionalProperties": true,
+      "title": "Basis",
+      "type": "object"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "record": {
+      "$ref": "#/components/schemas/EventRecord"
+     },
+     "record_sha256": {
+      "title": "Record Sha256",
+      "type": "string"
+     }
+    },
+    "required": [
+     "record",
+     "record_sha256",
+     "created_at",
+     "basis"
+    ],
+    "title": "EventRevisionOut",
+    "type": "object"
+   },
+   "EvidenceOut": {
+    "additionalProperties": false,
+    "properties": {
+     "asset_sha256": {
+      "title": "Asset Sha256",
+      "type": "string"
+     },
+     "candidate_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Candidate Id"
+     },
+     "derived": {
+      "title": "Derived",
+      "type": "boolean"
+     },
+     "evidence_id": {
+      "title": "Evidence Id",
+      "type": "string"
+     },
+     "height": {
+      "title": "Height",
+      "type": "integer"
+     },
+     "image_url": {
+      "title": "Image Url",
+      "type": "string"
+     },
+     "kind": {
+      "enum": [
+       "frame",
+       "crop",
+       "annotated",
+       "storyboard"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "proxy_frame_index": {
+      "title": "Proxy Frame Index",
+      "type": "integer"
+     },
+     "role": {
+      "enum": [
+       "before",
+       "during",
+       "after",
+       "observation"
+      ],
+      "title": "Role",
+      "type": "string"
+     },
+     "source_frame_index": {
+      "title": "Source Frame Index",
+      "type": "integer"
+     },
+     "source_pts_ms": {
+      "title": "Source Pts Ms",
+      "type": "integer"
+     },
+     "t_ms": {
+      "title": "T Ms",
+      "type": "integer"
+     },
+     "width": {
+      "title": "Width",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "evidence_id",
+     "candidate_id",
+     "role",
+     "kind",
+     "t_ms",
+     "proxy_frame_index",
+     "source_frame_index",
+     "source_pts_ms",
+     "derived",
+     "asset_sha256",
+     "image_url",
+     "width",
+     "height"
+    ],
+    "title": "EvidenceOut",
+    "type": "object"
+   },
+   "ExportCreate": {
+    "additionalProperties": false,
+    "properties": {
+     "idempotency_key": {
+      "maxLength": 80,
+      "minLength": 8,
+      "pattern": "^[A-Za-z0-9_\\-]+$",
+      "title": "Idempotency Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "idempotency_key"
+    ],
+    "title": "ExportCreate",
+    "type": "object"
+   },
+   "ExportOut": {
+    "additionalProperties": false,
+    "properties": {
+     "analysis_id": {
+      "title": "Analysis Id",
+      "type": "string"
+     },
+     "bytes": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bytes"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "download_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Download Url"
+     },
+     "export_id": {
+      "title": "Export Id",
+      "type": "string"
+     },
+     "file_count": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "File Count"
+     },
+     "head_digest": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Head Digest"
+     },
+     "sealed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sealed At"
+     },
+     "status": {
+      "enum": [
+       "queued",
+       "building",
+       "sealed",
+       "failed",
+       "revoked"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "trusted_head": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Trusted Head"
+     },
+     "trusted_head_source": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Trusted Head Source"
+     }
+    },
+    "required": [
+     "export_id",
+     "analysis_id",
+     "status",
+     "head_digest",
+     "trusted_head",
+     "trusted_head_source",
+     "file_count",
+     "bytes",
+     "download_url",
+     "created_at",
+     "sealed_at"
+    ],
+    "title": "ExportOut",
+    "type": "object"
+   },
+   "FrameOut": {
+    "additionalProperties": false,
+    "properties": {
+     "height": {
+      "title": "Height",
+      "type": "integer"
+     },
+     "image_url": {
+      "title": "Image Url",
+      "type": "string"
+     },
+     "proxy_frame_index": {
+      "title": "Proxy Frame Index",
+      "type": "integer"
+     },
+     "t_ms": {
+      "title": "T Ms",
+      "type": "integer"
+     },
+     "width": {
+      "title": "Width",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "t_ms",
+     "proxy_frame_index",
+     "width",
+     "height",
+     "image_url"
+    ],
+    "title": "FrameOut",
+    "type": "object"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "title": "Detail",
+      "type": "array"
+     }
+    },
+    "title": "HTTPValidationError",
+    "type": "object"
+   },
+   "HealthOut": {
+    "additionalProperties": false,
+    "properties": {
+     "status": {
+      "const": "ok",
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "status"
+    ],
+    "title": "HealthOut",
+    "type": "object"
+   },
+   "InvestigationOut": {
+    "additionalProperties": false,
+    "properties": {
+     "analysis_id": {
+      "title": "Analysis Id",
+      "type": "string"
+     },
+     "answer_source": {
+      "enum": [
+       "investigator",
+       "deterministic_fallback",
+       "abstained",
+       "pending"
+      ],
+      "title": "Answer Source",
+      "type": "string"
+     },
+     "claims": {
+      "items": {
+       "$ref": "#/components/schemas/Claim"
+      },
+      "title": "Claims",
+      "type": "array"
+     },
+     "completed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Completed At"
+     },
+     "cost_status": {
+      "enum": [
+       "estimated",
+       "provider_usage_based",
+       "unknown",
+       "replayed",
+       "none"
+      ],
+      "title": "Cost Status",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "current_request_cost_microusd": {
+      "title": "Current Request Cost Microusd",
+      "type": "integer"
+     },
+     "intent": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Intent"
+     },
+     "investigation_id": {
+      "title": "Investigation Id",
+      "type": "string"
+     },
+     "job_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Job Id"
+     },
+     "limits_used": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Limits Used",
+      "type": "object"
+     },
+     "object_id": {
+      "title": "Object Id",
+      "type": "string"
+     },
+     "original_processing_cost_microusd": {
+      "title": "Original Processing Cost Microusd",
+      "type": "integer"
+     },
+     "question": {
+      "title": "Question",
+      "type": "string"
+     },
+     "recorded_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recorded At"
+     },
+     "rejected_claims": {
+      "items": {
+       "$ref": "#/components/schemas/RejectedClaimOut"
+      },
+      "title": "Rejected Claims",
+      "type": "array"
+     },
+     "review_findings": {
+      "items": {
+       "$ref": "#/components/schemas/ReviewFindingOut"
+      },
+      "title": "Review Findings",
+      "type": "array"
+     },
+     "review_mode": {
+      "enum": [
+       "image_secondary",
+       "text_secondary",
+       "not_run"
+      ],
+      "title": "Review Mode",
+      "type": "string"
+     },
+     "review_verdict": {
+      "enum": [
+       "pass",
+       "reject",
+       "needs_evidence",
+       "not_run",
+       "unavailable",
+       "mixed"
+      ],
+      "title": "Review Verdict",
+      "type": "string"
+     },
+     "run_mode": {
+      "enum": [
+       "fixture",
+       "recorded_real",
+       "live"
+      ],
+      "title": "Run Mode",
+      "type": "string"
+     },
+     "sentences": {
+      "items": {
+       "$ref": "#/components/schemas/AnswerSentenceOut"
+      },
+      "title": "Sentences",
+      "type": "array"
+     },
+     "snapshot": {
+      "additionalProperties": true,
+      "title": "Snapshot",
+      "type": "object"
+     },
+     "status": {
+      "enum": [
+       "queued",
+       "running",
+       "completed",
+       "partial",
+       "failed",
+       "cancelled",
+       "interrupted"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "timings_ms": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Timings Ms",
+      "type": "object"
+     },
+     "unknown_codes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Unknown Codes",
+      "type": "array"
+     }
+    },
+    "required": [
+     "investigation_id",
+     "analysis_id",
+     "job_id",
+     "question",
+     "object_id",
+     "status",
+     "run_mode",
+     "intent",
+     "sentences",
+     "claims",
+     "rejected_claims",
+     "unknown_codes",
+     "answer_source",
+     "review_mode",
+     "review_verdict",
+     "review_findings",
+     "snapshot",
+     "limits_used",
+     "original_processing_cost_microusd",
+     "current_request_cost_microusd",
+     "cost_status",
+     "timings_ms",
+     "created_at",
+     "completed_at",
+     "recorded_at"
+    ],
+    "title": "InvestigationOut",
+    "type": "object"
+   },
+   "JobAccepted": {
+    "additionalProperties": false,
+    "properties": {
+     "analysis_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Analysis Id"
+     },
+     "export_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Export Id"
+     },
+     "investigation_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Investigation Id"
+     },
+     "job_id": {
+      "title": "Job Id",
+      "type": "string"
+     },
+     "state": {
+      "enum": [
+       "queued",
+       "running",
+       "needs_selection",
+       "completed",
+       "partial",
+       "failed",
+       "cancel_requested",
+       "cancelled",
+       "interrupted"
+      ],
+      "title": "State",
+      "type": "string"
+     }
+    },
+    "required": [
+     "job_id",
+     "state"
+    ],
+    "title": "JobAccepted",
+    "type": "object"
+   },
+   "JobOut": {
+    "additionalProperties": false,
+    "properties": {
+     "analysis_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Analysis Id"
+     },
+     "clip_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Clip Id"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ErrorBody"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "export_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Export Id"
+     },
+     "finished_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Finished At"
+     },
+     "investigation_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Investigation Id"
+     },
+     "job_id": {
+      "title": "Job Id",
+      "type": "string"
+     },
+     "kind": {
+      "enum": [
+       "normalise",
+       "analysis",
+       "question",
+       "export"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "partial_outcome": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Partial Outcome"
+     },
+     "run_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "fixture",
+         "recorded_real",
+         "live"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Run Mode"
+     },
+     "stage": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stage"
+     },
+     "started_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Started At"
+     },
+     "state": {
+      "enum": [
+       "queued",
+       "running",
+       "needs_selection",
+       "completed",
+       "partial",
+       "failed",
+       "cancel_requested",
+       "cancelled",
+       "interrupted"
+      ],
+      "title": "State",
+      "type": "string"
+     }
+    },
+    "required": [
+     "job_id",
+     "kind",
+     "state",
+     "stage",
+     "run_mode",
+     "clip_id",
+     "analysis_id",
+     "investigation_id",
+     "export_id",
+     "error",
+     "partial_outcome",
+     "created_at",
+     "started_at",
+     "finished_at"
+    ],
+    "title": "JobOut",
+    "type": "object"
+   },
+   "LimitsOut": {
+    "additionalProperties": false,
+    "properties": {
+     "analysis_cap_microusd": {
+      "title": "Analysis Cap Microusd",
+      "type": "integer"
+     },
+     "daily_cap_microusd": {
+      "title": "Daily Cap Microusd",
+      "type": "integer"
+     },
+     "max_clip_duration_ms": {
+      "title": "Max Clip Duration Ms",
+      "type": "integer"
+     },
+     "max_pending_jobs": {
+      "title": "Max Pending Jobs",
+      "type": "integer"
+     },
+     "max_supported_people": {
+      "title": "Max Supported People",
+      "type": "integer"
+     },
+     "max_upload_bytes": {
+      "title": "Max Upload Bytes",
+      "type": "integer"
+     },
+     "question_cap_microusd": {
+      "title": "Question Cap Microusd",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "max_upload_bytes",
+     "max_clip_duration_ms",
+     "max_supported_people",
+     "analysis_cap_microusd",
+     "question_cap_microusd",
+     "daily_cap_microusd",
+     "max_pending_jobs"
+    ],
+    "title": "LimitsOut",
+    "type": "object"
+   },
+   "ModelCapabilityOut": {
+    "additionalProperties": false,
+    "properties": {
+     "checked_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Checked At"
+     },
+     "model_id": {
+      "title": "Model Id",
+      "type": "string"
+     },
+     "role": {
+      "enum": [
+       "tracking",
+       "investigator",
+       "reviewer"
+      ],
+      "title": "Role",
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "passed",
+       "failed",
+       "unavailable",
+       "not_tested"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "role",
+     "model_id",
+     "status",
+     "checked_at"
+    ],
+    "title": "ModelCapabilityOut",
+    "type": "object"
+   },
+   "ObservationOut": {
+    "additionalProperties": false,
+    "properties": {
+     "box": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "integer"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Box"
+     },
+     "confidence_bp": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confidence Bp"
+     },
+     "detection_state": {
+      "enum": [
+       "observed",
+       "not_detected",
+       "unknown"
+      ],
+      "title": "Detection State",
+      "type": "string"
+     },
+     "entity_id": {
+      "title": "Entity Id",
+      "type": "string"
+     },
+     "identity_warning": {
+      "title": "Identity Warning",
+      "type": "boolean"
+     },
+     "mask_svg": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mask Svg"
+     },
+     "proxy_frame_index": {
+      "title": "Proxy Frame Index",
+      "type": "integer"
+     },
+     "t_ms": {
+      "title": "T Ms",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "entity_id",
+     "proxy_frame_index",
+     "t_ms",
+     "box",
+     "mask_svg",
+     "detection_state",
+     "confidence_bp",
+     "identity_warning"
+    ],
+    "title": "ObservationOut",
+    "type": "object"
+   },
+   "ObservationsPage": {
+    "additionalProperties": false,
+    "properties": {
+     "analysis_id": {
+      "title": "Analysis Id",
+      "type": "string"
+     },
+     "frame_height": {
+      "title": "Frame Height",
+      "type": "integer"
+     },
+     "frame_width": {
+      "title": "Frame Width",
+      "type": "integer"
+     },
+     "next_t0_ms": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next T0 Ms"
+     },
+     "observations": {
+      "items": {
+       "$ref": "#/components/schemas/ObservationOut"
+      },
+      "title": "Observations",
+      "type": "array"
+     },
+     "t0_ms": {
+      "title": "T0 Ms",
+      "type": "integer"
+     },
+     "t1_ms": {
+      "title": "T1 Ms",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "analysis_id",
+     "t0_ms",
+     "t1_ms",
+     "frame_width",
+     "frame_height",
+     "observations",
+     "next_t0_ms"
+    ],
+    "title": "ObservationsPage",
+    "type": "object"
+   },
+   "ProvenanceOut": {
+    "additionalProperties": false,
+    "properties": {
+     "models": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Models",
+      "type": "object"
+     },
+     "parser_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Parser Version"
+     },
+     "preprocessing_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Preprocessing Version"
+     },
+     "recorded_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recorded At"
+     },
+     "recorded_from": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recorded From"
+     },
+     "run_mode": {
+      "enum": [
+       "fixture",
+       "recorded_real",
+       "live"
+      ],
+      "title": "Run Mode",
+      "type": "string"
+     }
+    },
+    "required": [
+     "run_mode",
+     "models",
+     "parser_version",
+     "preprocessing_version",
+     "recorded_at",
+     "recorded_from"
+    ],
+    "title": "ProvenanceOut",
+    "type": "object"
+   },
+   "ProviderCallOut": {
+    "additionalProperties": false,
+    "properties": {
+     "actual_microusd": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Actual Microusd"
+     },
+     "attempt": {
+      "title": "Attempt",
+      "type": "integer"
+     },
+     "cost_status": {
+      "title": "Cost Status",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "elapsed_ms": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Elapsed Ms"
+     },
+     "error_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error Code"
+     },
+     "model_id": {
+      "title": "Model Id",
+      "type": "string"
+     },
+     "operation": {
+      "title": "Operation",
+      "type": "string"
+     },
+     "provider_call_id": {
+      "title": "Provider Call Id",
+      "type": "string"
+     },
+     "request_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Request Id"
+     },
+     "reserved_microusd": {
+      "title": "Reserved Microusd",
+      "type": "integer"
+     },
+     "state": {
+      "title": "State",
+      "type": "string"
+     }
+    },
+    "required": [
+     "provider_call_id",
+     "operation",
+     "model_id",
+     "attempt",
+     "state",
+     "cost_status",
+     "reserved_microusd",
+     "actual_microusd",
+     "elapsed_ms",
+     "request_id",
+     "error_code",
+     "created_at"
+    ],
+    "title": "ProviderCallOut",
+    "type": "object"
+   },
+   "QuestionCreate": {
+    "additionalProperties": false,
+    "properties": {
+     "idempotency_key": {
+      "maxLength": 80,
+      "minLength": 8,
+      "pattern": "^[A-Za-z0-9_\\-]+$",
+      "title": "Idempotency Key",
+      "type": "string"
+     },
+     "object_id": {
+      "default": "O1",
+      "pattern": "^O[1-9][0-9]*$",
+      "title": "Object Id",
+      "type": "string"
+     },
+     "question": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Question",
+      "type": "string"
+     }
+    },
+    "required": [
+     "question",
+     "idempotency_key"
+    ],
+    "title": "QuestionCreate",
+    "type": "object"
+   },
+   "ReadyOut": {
+    "additionalProperties": false,
+    "properties": {
+     "database": {
+      "title": "Database",
+      "type": "boolean"
+     },
+     "ffmpeg": {
+      "title": "Ffmpeg",
+      "type": "boolean"
+     },
+     "status": {
+      "enum": [
+       "ready",
+       "degraded"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "storage": {
+      "title": "Storage",
+      "type": "boolean"
+     },
+     "worker": {
+      "title": "Worker",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "status",
+     "database",
+     "storage",
+     "worker",
+     "ffmpeg"
+    ],
+    "title": "ReadyOut",
+    "type": "object"
+   },
+   "RecordedQuestionOut": {
+    "additionalProperties": false,
+    "properties": {
+     "investigation_id": {
+      "title": "Investigation Id",
+      "type": "string"
+     },
+     "question": {
+      "title": "Question",
+      "type": "string"
+     }
+    },
+    "required": [
+     "investigation_id",
+     "question"
+    ],
+    "title": "RecordedQuestionOut",
+    "type": "object"
+   },
+   "RejectedClaimOut": {
+    "additionalProperties": false,
+    "properties": {
+     "claim_id": {
+      "title": "Claim Id",
+      "type": "string"
+     },
+     "reason_code": {
+      "title": "Reason Code",
+      "type": "string"
+     },
+     "stage": {
+      "enum": [
+       "validator",
+       "reviewer"
+      ],
+      "title": "Stage",
+      "type": "string"
+     }
+    },
+    "required": [
+     "claim_id",
+     "stage",
+     "reason_code"
+    ],
+    "title": "RejectedClaimOut",
+    "type": "object"
+   },
+   "ReviewFindingOut": {
+    "additionalProperties": false,
+    "properties": {
+     "claim_id": {
+      "title": "Claim Id",
+      "type": "string"
+     },
+     "evidence_ids": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Evidence Ids",
+      "type": "array"
+     },
+     "reason_code": {
+      "title": "Reason Code",
+      "type": "string"
+     },
+     "verdict": {
+      "enum": [
+       "pass",
+       "reject",
+       "needs_evidence"
+      ],
+      "title": "Verdict",
+      "type": "string"
+     }
+    },
+    "required": [
+     "claim_id",
+     "verdict",
+     "reason_code",
+     "evidence_ids"
+    ],
+    "title": "ReviewFindingOut",
+    "type": "object"
+   },
+   "SelectionBind": {
+    "additionalProperties": false,
+    "properties": {
+     "idempotency_key": {
+      "maxLength": 80,
+      "minLength": 8,
+      "pattern": "^[A-Za-z0-9_\\-]+$",
+      "title": "Idempotency Key",
+      "type": "string"
+     },
+     "selection_id": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Selection Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "selection_id",
+     "idempotency_key"
+    ],
+    "title": "SelectionBind",
+    "type": "object"
+   },
+   "SelectionOut": {
+    "additionalProperties": false,
+    "properties": {
+     "box": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Box",
+      "type": "array"
+     },
+     "confidence_bp": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confidence Bp"
+     },
+     "proxy_frame_index": {
+      "title": "Proxy Frame Index",
+      "type": "integer"
+     },
+     "selection_id": {
+      "title": "Selection Id",
+      "type": "string"
+     },
+     "t_ms": {
+      "title": "T Ms",
+      "type": "integer"
+     },
+     "thumbnail_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Thumbnail Url"
+     }
+    },
+    "required": [
+     "selection_id",
+     "proxy_frame_index",
+     "t_ms",
+     "box",
+     "thumbnail_url",
+     "confidence_bp"
+    ],
+    "title": "SelectionOut",
+    "type": "object"
+   },
+   "SessionCreate": {
+    "additionalProperties": false,
+    "properties": {
+     "access_code": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Access Code"
+     }
+    },
+    "title": "SessionCreate",
+    "type": "object"
+   },
+   "SessionOut": {
+    "additionalProperties": false,
+    "properties": {
+     "csrf_token": {
+      "title": "Csrf Token",
+      "type": "string"
+     },
+     "expires_at": {
+      "title": "Expires At",
+      "type": "string"
+     },
+     "live_uploads_enabled": {
+      "title": "Live Uploads Enabled",
+      "type": "boolean"
+     },
+     "scope": {
+      "enum": [
+       "owner",
+       "public"
+      ],
+      "title": "Scope",
+      "type": "string"
+     }
+    },
+    "required": [
+     "scope",
+     "csrf_token",
+     "expires_at",
+     "live_uploads_enabled"
+    ],
+    "title": "SessionOut",
+    "type": "object"
+   },
+   "TargetBoxIn": {
+    "additionalProperties": false,
+    "properties": {
+     "frame_index": {
+      "minimum": 0.0,
+      "title": "Frame Index",
+      "type": "integer"
+     },
+     "kind": {
+      "const": "box",
+      "title": "Kind",
+      "type": "string"
+     },
+     "label": {
+      "default": "selected object",
+      "maxLength": 40,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9 \\-']*$",
+      "title": "Label",
+      "type": "string"
+     },
+     "proxy_height_px": {
+      "exclusiveMinimum": 0.0,
+      "title": "Proxy Height Px",
+      "type": "integer"
+     },
+     "proxy_width_px": {
+      "exclusiveMinimum": 0.0,
+      "title": "Proxy Width Px",
+      "type": "integer"
+     },
+     "xyxy_exclusive": {
+      "items": {
+       "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "title": "Xyxy Exclusive",
+      "type": "array"
+     }
+    },
+    "required": [
+     "kind",
+     "frame_index",
+     "proxy_width_px",
+     "proxy_height_px",
+     "xyxy_exclusive"
+    ],
+    "title": "TargetBoxIn",
+    "type": "object"
+   },
+   "TargetConceptIn": {
+    "additionalProperties": false,
+    "properties": {
+     "frame_index": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Frame Index",
+      "type": "integer"
+     },
+     "kind": {
+      "const": "concept",
+      "title": "Kind",
+      "type": "string"
+     },
+     "phrase": {
+      "maxLength": 60,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9 \\-']*$",
+      "title": "Phrase",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "phrase"
+    ],
+    "title": "TargetConceptIn",
+    "type": "object"
+   },
+   "UsageOut": {
+    "additionalProperties": false,
+    "properties": {
+     "calls": {
+      "items": {
+       "$ref": "#/components/schemas/ProviderCallOut"
+      },
+      "title": "Calls",
+      "type": "array"
+     },
+     "cost_status": {
+      "enum": [
+       "estimated",
+       "provider_usage_based",
+       "unknown",
+       "replayed",
+       "none"
+      ],
+      "title": "Cost Status",
+      "type": "string"
+     },
+     "provider_calls": {
+      "title": "Provider Calls",
+      "type": "integer"
+     },
+     "rate_card_revision": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rate Card Revision"
+     },
+     "total_microusd": {
+      "title": "Total Microusd",
+      "type": "integer"
+     },
+     "unknown_cost_calls": {
+      "title": "Unknown Cost Calls",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "total_microusd",
+     "cost_status",
+     "provider_calls",
+     "unknown_cost_calls",
+     "calls",
+     "rate_card_revision"
+    ],
+    "title": "UsageOut",
+    "type": "object"
+   },
+   "ValidationError": {
+    "properties": {
+     "ctx": {
+      "title": "Context",
+      "type": "object"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "title": "Location",
+      "type": "array"
+     },
+     "msg": {
+      "title": "Message",
+      "type": "string"
+     },
+     "type": {
+      "title": "Error Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError",
+    "type": "object"
+   },
+   "VerifyIn": {
+    "additionalProperties": false,
+    "properties": {
+     "expected_head": {
+      "anyOf": [
+       {
+        "pattern": "^[a-f0-9]{64}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Head"
+     }
+    },
+    "title": "VerifyIn",
+    "type": "object"
+   },
+   "VerifyOut": {
+    "additionalProperties": false,
+    "properties": {
+     "anchor_source": {
+      "enum": [
+       "registry",
+       "supplied",
+       "none"
+      ],
+      "title": "Anchor Source",
+      "type": "string"
+     },
+     "anchored": {
+      "title": "Anchored",
+      "type": "boolean"
+     },
+     "errors": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+     },
+     "export_id": {
+      "title": "Export Id",
+      "type": "string"
+     },
+     "head": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Head"
+     },
+     "integrity": {
+      "enum": [
+       "valid",
+       "failed"
+      ],
+      "title": "Integrity",
+      "type": "string"
+     },
+     "note": {
+      "title": "Note",
+      "type": "string"
+     }
+    },
+    "required": [
+     "export_id",
+     "integrity",
+     "anchored",
+     "anchor_source",
+     "head",
+     "errors",
+     "note"
+    ],
+    "title": "VerifyOut",
+    "type": "object"
+   },
+   "ZoneIn": {
+    "additionalProperties": false,
+    "properties": {
+     "label": {
+      "maxLength": 40,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9 \\-']*$",
+      "title": "Label",
+      "type": "string"
+     },
+     "polygon": {
+      "items": {
+       "items": {
+        "type": "integer"
+       },
+       "maxItems": 2,
+       "minItems": 2,
+       "type": "array"
+      },
+      "maxItems": 16,
+      "minItems": 3,
+      "title": "Polygon",
+      "type": "array"
+     }
+    },
+    "required": [
+     "label",
+     "polygon"
+    ],
+    "title": "ZoneIn",
+    "type": "object"
+   }
+  }
+ },
+ "info": {
+  "title": "SceneTrace",
+  "version": "0.1.0"
+ },
+ "openapi": "3.1.0",
+ "paths": {
+  "/api/v1/analyses/{analysis_id}": {
+   "get": {
+    "operationId": "get_analysis_api_v1_analyses__analysis_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "analysis_id",
+      "required": true,
+      "schema": {
+       "title": "Analysis Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalysisOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Analysis"
+   }
+  },
+  "/api/v1/analyses/{analysis_id}/exports": {
+   "get": {
+    "operationId": "list_exports_api_v1_analyses__analysis_id__exports_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "analysis_id",
+      "required": true,
+      "schema": {
+       "title": "Analysis Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ExportOut"
+         },
+         "title": "Response List Exports Api V1 Analyses  Analysis Id  Exports Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Exports"
+   },
+   "post": {
+    "operationId": "create_export_api_v1_analyses__analysis_id__exports_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "analysis_id",
+      "required": true,
+      "schema": {
+       "title": "Analysis Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-csrf-token",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Csrf-Token"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExportCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobAccepted"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Export"
+   }
+  },
+  "/api/v1/analyses/{analysis_id}/investigations": {
+   "get": {
+    "operationId": "list_investigations_api_v1_analyses__analysis_id__investigations_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "analysis_id",
+      "required": true,
+      "schema": {
+       "title": "Analysis Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/InvestigationOut"
+         },
+         "title": "Response List Investigations Api V1 Analyses  Analysis Id  Investigations Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Investigations"
+   }
+  },
+  "/api/v1/analyses/{analysis_id}/observations": {
+   "get": {
+    "operationId": "observations_api_v1_analyses__analysis_id__observations_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "analysis_id",
+      "required": true,
+      "schema": {
+       "title": "Analysis Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "t0_ms",
+      "required": true,
+      "schema": {
+       "title": "T0 Ms",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "t1_ms",
+      "required": true,
+      "schema": {
+       "title": "T1 Ms",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ObservationsPage"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Observations"
+   }
+  },
+  "/api/v1/analyses/{analysis_id}/questions": {
+   "post": {
+    "operationId": "ask_api_v1_analyses__analysis_id__questions_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "analysis_id",
+      "required": true,
+      "schema": {
+       "title": "Analysis Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-csrf-token",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Csrf-Token"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/QuestionCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobAccepted"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Ask"
+   }
+  },
+  "/api/v1/analyses/{analysis_id}/selection": {
+   "post": {
+    "operationId": "bind_selection_api_v1_analyses__analysis_id__selection_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "analysis_id",
+      "required": true,
+      "schema": {
+       "title": "Analysis Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-csrf-token",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Csrf-Token"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SelectionBind"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobAccepted"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Bind Selection"
+   }
+  },
+  "/api/v1/assets/{asset_id}": {
+   "get": {
+    "operationId": "get_asset_api_v1_assets__asset_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "asset_id",
+      "required": true,
+      "schema": {
+       "title": "Asset Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Asset"
+   }
+  },
+  "/api/v1/capabilities": {
+   "get": {
+    "operationId": "capabilities_api_v1_capabilities_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CapabilitiesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Capabilities"
+   }
+  },
+  "/api/v1/clips": {
+   "get": {
+    "operationId": "list_clips_api_v1_clips_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ClipOut"
+         },
+         "title": "Response List Clips Api V1 Clips Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "List Clips"
+   },
+   "post": {
+    "operationId": "upload_clip_api_v1_clips_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-csrf-token",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Csrf-Token"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClipOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Upload Clip"
+   }
+  },
+  "/api/v1/clips/{clip_id}": {
+   "delete": {
+    "operationId": "remove_clip_api_v1_clips__clip_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "clip_id",
+      "required": true,
+      "schema": {
+       "title": "Clip Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-csrf-token",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Csrf-Token"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Remove Clip"
+   },
+   "get": {
+    "operationId": "get_clip_api_v1_clips__clip_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "clip_id",
+      "required": true,
+      "schema": {
+       "title": "Clip Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ClipOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Clip"
+   }
+  },
+  "/api/v1/clips/{clip_id}/analyses": {
+   "get": {
+    "operationId": "clip_analyses_api_v1_clips__clip_id__analyses_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "clip_id",
+      "required": true,
+      "schema": {
+       "title": "Clip Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AnalysisOut"
+         },
+         "title": "Response Clip Analyses Api V1 Clips  Clip Id  Analyses Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Clip Analyses"
+   },
+   "post": {
+    "operationId": "create_analysis_api_v1_clips__clip_id__analyses_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "clip_id",
+      "required": true,
+      "schema": {
+       "title": "Clip Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-csrf-token",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Csrf-Token"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnalysisCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobAccepted"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Analysis"
+   }
+  },
+  "/api/v1/clips/{clip_id}/frame": {
+   "get": {
+    "operationId": "clip_frame_api_v1_clips__clip_id__frame_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "clip_id",
+      "required": true,
+      "schema": {
+       "title": "Clip Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "t_ms",
+      "required": true,
+      "schema": {
+       "title": "T Ms",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FrameOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Clip Frame"
+   }
+  },
+  "/api/v1/clips/{clip_id}/video": {
+   "get": {
+    "operationId": "clip_video_api_v1_clips__clip_id__video_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "clip_id",
+      "required": true,
+      "schema": {
+       "title": "Clip Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Clip Video"
+   }
+  },
+  "/api/v1/demos": {
+   "get": {
+    "operationId": "demos_api_v1_demos_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/DemoOut"
+         },
+         "title": "Response Demos Api V1 Demos Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Demos"
+   }
+  },
+  "/api/v1/exports/{export_id}": {
+   "get": {
+    "operationId": "get_export_api_v1_exports__export_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "export_id",
+      "required": true,
+      "schema": {
+       "title": "Export Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ExportOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Export"
+   }
+  },
+  "/api/v1/exports/{export_id}/download": {
+   "get": {
+    "operationId": "download_export_api_v1_exports__export_id__download_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "export_id",
+      "required": true,
+      "schema": {
+       "title": "Export Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Download Export"
+   }
+  },
+  "/api/v1/exports/{export_id}/verify": {
+   "post": {
+    "operationId": "verify_api_v1_exports__export_id__verify_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "export_id",
+      "required": true,
+      "schema": {
+       "title": "Export Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VerifyIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/VerifyOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Verify"
+   }
+  },
+  "/api/v1/health": {
+   "get": {
+    "operationId": "health_api_v1_health_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HealthOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Health"
+   }
+  },
+  "/api/v1/investigations/{investigation_id}": {
+   "get": {
+    "operationId": "get_investigation_api_v1_investigations__investigation_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "investigation_id",
+      "required": true,
+      "schema": {
+       "title": "Investigation Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InvestigationOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Investigation"
+   }
+  },
+  "/api/v1/jobs/{job_id}": {
+   "get": {
+    "operationId": "get_job_api_v1_jobs__job_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "title": "Job Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Job"
+   }
+  },
+  "/api/v1/jobs/{job_id}/cancel": {
+   "post": {
+    "operationId": "cancel_job_api_v1_jobs__job_id__cancel_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "title": "Job Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-csrf-token",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Csrf-Token"
+      }
+     }
+    ],
+    "responses": {
+     "202": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Cancel Job"
+   }
+  },
+  "/api/v1/jobs/{job_id}/events": {
+   "get": {
+    "operationId": "job_events_api_v1_jobs__job_id__events_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "title": "Job Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "last-event-id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Last-Event-Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Job Events"
+   }
+  },
+  "/api/v1/ready": {
+   "get": {
+    "operationId": "ready_api_v1_ready_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReadyOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Ready"
+   }
+  },
+  "/api/v1/session": {
+   "delete": {
+    "operationId": "delete_session_api_v1_session_delete",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-csrf-token",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Csrf-Token"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Session"
+   },
+   "post": {
+    "operationId": "create_session_api_v1_session_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SessionCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SessionOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Session"
+   }
+  }
+ }
+}
