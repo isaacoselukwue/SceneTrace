@@ -26,7 +26,7 @@ await desk.screenshot({ path: `${out}/workspace-desktop.png` });
 await desk.locator(".event.status-rejected summary").click();
 await settle(desk, 400);
 await desk.locator(".history").screenshot({ path: `${out}/pass-by-why-not.png` });
-await desk.locator(".citation:visible").first().click();
+await desk.getByRole("button", { name: "Open evidence for E3" }).first().click();
 await settle(desk, 1500);
 await desk.screenshot({ path: `${out}/evidence-drawer-desktop.png` });
 await desk.keyboard.press("Escape");

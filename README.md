@@ -12,7 +12,7 @@ It is built on Meta Model API: **SAM 3.1** segments and tracks the object and th
 
 ## Demonstration
 
-[Watch the demonstration (2 min 49 s, docs/media/scenetrace-demo.mp4)](docs/media/scenetrace-demo.mp4). It is a screen recording of the running application: a live analysis and a live question against Meta Model API, a recorded run in which the reviewer withheld a supported claim, and the integrity check. Waiting time during the two live calls is shown at 2x speed and labelled on screen. The clips are drawn test animations, not real footage.
+[Watch the demonstration (2 min 50 s, docs/media/scenetrace-demo.mp4)](docs/media/scenetrace-demo.mp4). It is a screen recording of the running application: a live analysis and a live question against Meta Model API, a recorded run in which the reviewer withheld a supported claim, and the integrity check. Waiting time during the two live calls is shown at 2x speed and labelled on screen. The clips are drawn test animations, not real footage.
 
 | | |
 | --- | --- |
@@ -48,7 +48,7 @@ A model that watches a video will happily say who took something. SceneTrace is 
 | Evidence drawer: original and annotated frames, source frame and timestamp, digests, assessments | Working |
 | Sealed export, download, verification against the server registry or a head you kept | Working |
 | Recorded demonstrations replayed through the same pipeline with no network and no model calls | Working, including in Docker |
-| Phone layout (390 px) with touch drawing and no sideways scrolling, keyboard focus, reduced motion | Working, browser-tested on desktop and phone |
+| Layout: on desktop, cards in a row share their edges; on phones (390 px), tabs, touch drawing and no sideways scrolling; portrait clips shown at full height; keyboard focus and reduced motion | Working, browser-tested on desktop and phone |
 
 Run modes are always labelled: **Live analysis**, **Recorded real run** (a replay of a stored live run, with its original date, models and cost) and **Development fixture** (deterministic code stands in for the models; a persistent banner says it is not a real analysis).
 
@@ -87,7 +87,7 @@ The reviewer misses changes it cannot see (one-second time shifts, superseded re
 
 **Token counting for video.** `POST /v1/responses/input_tokens` counted 384 input tokens for each whole-video request, while the provider billed 4,271 and 5,311: the count does not include video tokens. SceneTrace therefore adds 600 tokens per second of video to the reservation for video requests, which covered the billed input in both runs. For image requests the count is an upper bound (881 counted, 670 billed).
 
-**Software checks.** 87 Python tests pass (2 opt-in live tests skipped by default), including an offline replay of both recorded demonstrations, plus 53 tests of the core claim, budget and integrity modules, 7 client unit tests and 10 browser test runs across desktop and phone viewports, one of which drives the whole flow on a phone with touch input. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
+**Software checks.** 91 Python tests pass (2 opt-in live tests skipped by default), including an offline replay of both recorded demonstrations, plus 53 tests of the core claim, budget and integrity modules, 8 client unit tests and 11 browser test runs across desktop and phone viewports: one drives the whole flow on a phone with touch input, and one checks that cards sharing a row share their edges. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
 
 ## Run it
 
