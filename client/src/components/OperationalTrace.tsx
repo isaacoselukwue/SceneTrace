@@ -3,13 +3,16 @@ import { duration } from "../lib/format";
 
 const HIDDEN = new Set(["budget.updated"]);
 
-// An operational log of steps and concise results. It never shows model reasoning.
-export function OperationalTrace({ events, title = "Operations" }: { events: JobEvent[]; title?: string }) {
+export function OperationalTrace({ events, title = "Operations", running = false }: { events: JobEvent[]; title?: string; running?: boolean }) {
   const shown = events.filter((e) => !HIDDEN.has(e.type));
   const reserved = events.filter((e) => e.type === "budget.updated").length;
   return (
     <section className="trace" aria-label={title}>
-      <h3>{title}</h3>
+      <div className="trace-head">
+        {running && <span className="spinner" aria-hidden="true" />}
+        <h3>{title}</h3>
+      </div>
+      {shown.length === 0 && <p className="muted">Waiting for the first step…</p>}
       <ol aria-live="polite" aria-relevant="additions">
         {shown.map((e) => (
           <li key={e.seq} className={`trace-${e.type.replace(".", "-")}`}>

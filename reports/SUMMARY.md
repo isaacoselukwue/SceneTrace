@@ -1,6 +1,6 @@
 # SceneTrace evaluation summary
 
-Generated 2026-10-29T11:30:46.072Z from commit `93dafb1970accaf8a712e148b4b40a69bdf3eb36` with `make evaluate`.
+Generated 2026-10-29T11:48:40.287Z from commit `a912881a4445f2ed6a5e4562417621b43ff3fc9a` with `make evaluate`.
 
 ## Real-video evaluation
 
@@ -22,7 +22,7 @@ Questions: 3 useful answers of 4 observable questions; 1 unobservable question(s
 
 ### Other arms on the same clips
 
-A, Muse Spark on the whole video (no tracks, candidates or evidence frames): TP 1, FP 0, FN 0 on visible-certainty events.
+A, Muse Spark on the whole video (no tracks, candidates or evidence frames): TP 1, FP 0, FN 0 on visible-certainty events (measured 2026-10-29T11:30:46.072Z).
 D, the same recorded investigator turns with the reviewer removed: 4 useful answers of 4 observable questions, 1 of 1 correct abstentions, 0 wrong assertions.
 
 ## Planted faults (validator)

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type CapabilitiesOut, type SessionOut } from "./api/client";
 import { Home } from "./components/Home";
+import { Logo } from "./components/Icons";
 import { AnalysisPage, ClipPage } from "./components/Workspace";
 
 function useHash(): [string, (hash: string) => void] {
@@ -21,12 +22,13 @@ export function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Establish the session cookie before any page loads owner-scoped data.
     api.session().then(setSession).catch(() => setSession(null)).finally(() => {
       setReady(true);
       api.capabilities().then(setCapabilities).catch(() => setCapabilities(null));
     });
   }, []);
+
+  useEffect(() => { window.scrollTo(0, 0); }, [hash]);
 
   const clip = hash.match(/^#\/clip\/([a-z0-9_]+)$/);
   const analysis = hash.match(/^#\/analysis\/([a-z0-9_]+)$/);
@@ -34,25 +36,30 @@ export function App() {
     <>
       <a className="skip" href="#main">Skip to content</a>
       <header className="site-head">
-        <button type="button" className="brand" onClick={() => navigate("#/")}>
-          <span className="logo" aria-hidden="true">◎</span>
-          <span><strong>SceneTrace</strong><span className="tagline">Follow the object. Check the evidence.</span></span>
-        </button>
-        <nav aria-label="Site">
-          {capabilities && (
-            <span className={`badge ${capabilities.live_available ? "mode-live" : "tone-neutral"}`}>
-              {capabilities.live_available ? "Live models available" : "Live models off"}
-            </span>
-          )}
-          <button type="button" className="link" onClick={() => setAbout(true)}>About</button>
-        </nav>
+        <div className="site-head-inner">
+          <button type="button" className="brand" onClick={() => navigate("#/")} aria-label="SceneTrace home">
+            <Logo />
+            <span className="brand-name">SceneTrace</span>
+            <span className="brand-tag">Follow the object. Check the evidence.</span>
+          </button>
+          <nav className="site-nav" aria-label="Site">
+            {capabilities && (
+              <span className={`live-pill ${capabilities.live_available ? "on" : "off"}`}
+                title={capabilities.live_available ? "Meta Model API is configured" : capabilities.live_block_reason ?? "Live analysis is off"}>
+                <span className="dot" aria-hidden="true" />
+                {capabilities.live_available ? "Live models on" : "Live models off"}
+              </span>
+            )}
+            <button type="button" className="ghost" onClick={() => setAbout(true)}>About</button>
+          </nav>
+        </div>
       </header>
       {!ready ? <main id="main"><p className="muted">Loading…</p></main>
-        : analysis ? <AnalysisPage key={analysis[1]} analysisId={analysis[1]} session={session} />
+        : analysis ? <AnalysisPage key={analysis[1]} analysisId={analysis[1]} session={session} navigate={navigate} />
         : clip && capabilities ? <ClipPage clipId={clip[1]} capabilities={capabilities} navigate={navigate} />
           : <Home session={session} capabilities={capabilities} onSession={setSession} navigate={navigate} />}
       <footer className="site-foot">
-        <span>Created by Isaac Oselukwue</span>
+        <span>SceneTrace, created by Isaac Oselukwue.</span>
         <span>P identifiers are clip-local tracks, not identities. SceneTrace does not recognise faces or judge intent.</span>
       </footer>
       {about && <About capabilities={capabilities} onClose={() => setAbout(false)} />}
@@ -70,14 +77,17 @@ function About({ capabilities, onClose }: { capabilities: CapabilitiesOut | null
     return () => { window.removeEventListener("keydown", onKey); previous?.focus(); };
   }, [onClose]);
   return (
-    <div className="drawer-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={onClose}>
       <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="about-title" onClick={(e) => e.stopPropagation()}>
         <h2 id="about-title">About SceneTrace</h2>
         <p>SceneTrace was created by Isaac Oselukwue. It reconstructs the observed history of one selected object in a short video and links every factual statement to the original frames.</p>
         <h3>Models</h3>
-        <ul>
+        <ul className="model-list">
           {(capabilities?.models ?? []).map((m) => (
-            <li key={m.role}><span className="mono">{m.model_id}</span>: {m.role}, capability check {m.status.replace("_", " ")}</li>
+            <li key={m.role}>
+              <span className="mono">{m.model_id}</span>
+              <span className="muted">{m.role}, capability check {m.status.replace("_", " ")}</span>
+            </li>
           ))}
         </ul>
         <p>Segmentation and tracking: SAM 3.1. Visual assessment and investigation: Muse Spark. Optional secondary review: Muse Wonder. All through Meta Model API in Standard mode.</p>

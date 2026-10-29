@@ -12,6 +12,10 @@ export function interval(startMs: number, endMs: number): string {
   return startMs === endMs ? clipTime(startMs) : `${clipTime(startMs)} to ${clipTime(endMs)}`;
 }
 
+export function shortInterval(startMs: number, endMs: number): string {
+  return startMs === endMs ? clipTime(startMs) : `${clipTime(startMs)}–${clipTime(endMs)}`;
+}
+
 export function usd(microusd: number | null | undefined): string {
   if (microusd === null || microusd === undefined) return "unknown";
   const dollars = microusd / 1_000_000;

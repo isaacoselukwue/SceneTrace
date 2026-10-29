@@ -16,7 +16,7 @@ test("upload, select by drawing a box, analyse in fixture mode, ask, cite and ve
   await page.getByRole("button", { name: "Upload" }).click();
   await expect(page.getByRole("heading", { name: "Select the object to follow" })).toBeVisible({ timeout: 60_000 });
   await expect(page.locator(".banner-synthetic")).toBeVisible();
-  await page.getByLabel("Draw a box on this frame").check();
+  await page.getByLabel("Draw a box").check();
   const frame = page.locator(".selector-frame");
   const box = (await frame.boundingBox())!;
   // The bottle sits near x 511-529, y 361-405 of 960x540; the frame image fills the 16:9 holder.
@@ -46,7 +46,58 @@ test("upload, select by drawing a box, analyse in fixture mode, ask, cite and ve
   await page.getByRole("button", { name: "Create sealed export" }).click();
   await page.getByRole("button", { name: "Verify against the server registry" }).click({ timeout: 60_000 });
   await expect(page.locator(".verify-result")).toContainText("Integrity valid");
-  await expect(page.locator(".verify-result")).toContainText("anchored to the server registry");
+  await expect(page.locator(".verify-result")).toContainText("Anchored to the server registry");
+});
+
+test("phone: draw the box by touch, analyse, ask, cite and verify without sideways scrolling", async ({ page }, info) => {
+  test.skip(info.project.name !== "phone", "touch input is exercised on the phone project");
+  const width = page.viewportSize()!.width;
+  const fitsScreen = async () => expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  await page.goto("/");
+  await fitsScreen();
+  await page.getByLabel("Video file").setInputFiles(SAMPLE);
+  await page.getByLabel(/I own this footage/).check();
+  await page.getByRole("button", { name: "Upload" }).click();
+  await expect(page.getByRole("heading", { name: "Select the object to follow" })).toBeVisible({ timeout: 60_000 });
+  await page.getByLabel("Draw a box").check();
+  const frame = page.locator(".selector-frame");
+  await frame.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  const box = (await frame.boundingBox())!;
+  const sx = box.width / 960;
+  const cdp = await page.context().newCDPSession(page);
+  const touch = (type: "touchStart" | "touchMove" | "touchEnd", x: number, y: number) => cdp.send("Input.dispatchTouchEvent", {
+    type, touchPoints: type === "touchEnd" ? [] : [{ x: box.x + x * sx, y: box.y + y * sx }],
+  });
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+  await touch("touchStart", 505, 355);
+  for (const step of [1, 2, 3, 4, 5]) await touch("touchMove", 505 + step * 6, 355 + step * 11);
+  await touch("touchEnd", 0, 0);
+  await expect(page.getByText(/^Box \d+, \d+, \d+, \d+ in proxy pixels/)).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+  await fitsScreen();
+  await page.getByLabel(/Development fixture/).check();
+  await page.getByRole("button", { name: "Analyse this object" }).click();
+  await expect(page.locator(".event-list li").first()).toBeVisible({ timeout: 90_000 });
+  await fitsScreen();
+  const tabs = page.locator(".tabs.mobile-only");
+  await tabs.getByRole("tab", { name: "Ask" }).click();
+  await page.getByRole("button", { name: "Who picked it up?" }).click();
+  const citation = page.locator(".citation").first();
+  await expect(citation).toBeVisible({ timeout: 60_000 });
+  await fitsScreen();
+  await citation.click();
+  const drawer = page.getByRole("dialog");
+  await expect(drawer.locator("figure img").first()).toBeVisible();
+  await expect.poll(async () => {
+    const sheet = (await drawer.boundingBox())!;
+    return sheet.x >= 0 && sheet.x + sheet.width <= width;
+  }).toBe(true);
+  await drawer.getByRole("button", { name: "Close evidence" }).click();
+  await tabs.getByRole("tab", { name: "Integrity" }).click();
+  await page.getByRole("button", { name: "Create sealed export" }).click();
+  await page.getByRole("button", { name: "Verify against the server registry" }).click({ timeout: 60_000 });
+  await expect(page.locator(".verify-result")).toContainText("Integrity valid");
+  await fitsScreen();
 });
 
 test("recorded demonstration replays with its labels and original cost", async ({ page }) => {
@@ -57,11 +108,10 @@ test("recorded demonstration replays with its labels and original cost", async (
   const tabs = page.locator(".tabs.mobile-only");
   if (await tabs.isVisible()) await tabs.getByRole("tab", { name: "History" }).click();
   await expect(page.locator(".event-list li").first()).toBeVisible();
-  if (await tabs.isVisible()) await tabs.getByRole("tab", { name: "Answer" }).click();
+  if (await tabs.isVisible()) await tabs.getByRole("tab", { name: "Ask" }).click();
   await expect(page.locator(".answer-card").first()).toBeVisible();
   await expect(page.getByText(/recorded demonstration replays its recorded questions/)).toBeVisible();
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
 });
 
 test("overlay toggle and seeking across the occlusion", async ({ page }) => {
@@ -92,7 +142,7 @@ test("draw a destination zone and see it during playback", async ({ page }, info
   await page.getByLabel(/I own this footage/).check();
   await page.getByRole("button", { name: "Upload" }).click();
   await expect(page.getByRole("heading", { name: "Select the object to follow" })).toBeVisible({ timeout: 60_000 });
-  await page.getByLabel("Draw a box on this frame").check();
+  await page.getByLabel("Draw a box").check();
   const frame = page.locator(".selector-frame");
   await frame.scrollIntoViewIfNeeded();
   const box = (await frame.boundingBox())!;

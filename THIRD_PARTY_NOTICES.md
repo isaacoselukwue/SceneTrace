@@ -24,8 +24,12 @@ Versions are the locked versions in `uv.lock` and `client/package-lock.json`.
 
 ## Client dependencies
 
-- react 19.3.1
-- react-dom 19.3.1
+- react 19.3.1: MIT
+- react-dom 19.3.1: MIT
+- @fontsource-variable/inter 5.3.0: the Inter typeface by The Inter Project Authors, SIL Open Font License 1.1
+- @fontsource-variable/jetbrains-mono 5.3.0: the JetBrains Mono typeface by The JetBrains Mono Project Authors, SIL Open Font License 1.1
+
+The two typefaces are bundled into the built client as WOFF2 files; their licence texts ship in the npm packages.
 
 Development tools: @playwright/test 1.64.1, @types/node 22.20.5, @types/react 19.3.0, @types/react-dom 19.3.0, @vitejs/plugin-react 6.1.2, jsdom 30.1.3, openapi-typescript 7.13.0, typescript 5.9.3, vite 8.3.5, vitest 5.0.5.
 

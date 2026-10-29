@@ -109,6 +109,11 @@ def _import_one(svc: Services, package: Path, replay_questions: bool = True) -> 
     _close(svc, job, state)
     if state not in ("completed", "partial"):
         raise AppError("DEMO_REPLAY_FAILED", f"{package.name}: the recorded analysis did not replay ({state}).")
+    replay_timings = loads(svc.db.require("SELECT timings_json FROM analyses WHERE id = ?", (analysis_id,), "analysis")["timings_json"], {})
+    original_timings = manifest.get("original_run", {}).get("cold_timings_ms", {})
+    with svc.db.write() as conn:
+        conn.execute("UPDATE analyses SET timings_json = ? WHERE id = ?",
+                     (dumps({**original_timings, "replay_total_ms": replay_timings.get("total_ms", 0)}), analysis_id))
     for question in manifest["questions"] if replay_questions else []:
         inv_id = new_investigation(svc, owner_id=PUBLIC, analysis_id=analysis_id, question=question, object_id="O1",
                                    run_mode="recorded_real")

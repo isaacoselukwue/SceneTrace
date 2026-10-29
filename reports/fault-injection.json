@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-29T11:30:46.072Z",
+  "generated_at": "2026-10-29T11:48:40.287Z",
   "summary": {
     "planted": 30,
     "clean_controls": 10,
@@ -52,7 +52,7 @@
     {
       "case_id": "F01",
       "category": "actor_substitution",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "the passer-by blamed for the pickup",
       "claim": {
         "claim_id": "C1",
@@ -74,7 +74,7 @@
     {
       "case_id": "F02",
       "category": "actor_substitution",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "actor dropped from a supported actor claim",
       "claim": {
         "claim_id": "C1",
@@ -96,7 +96,7 @@
     {
       "case_id": "F03",
       "category": "actor_substitution",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "a person track that does not exist",
       "claim": {
         "claim_id": "C1",
@@ -118,7 +118,7 @@
     {
       "case_id": "F04",
       "category": "actor_substitution",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "the occluding person named for a hidden removal",
       "claim": {
         "claim_id": "C1",
@@ -140,7 +140,7 @@
     {
       "case_id": "F05",
       "category": "actor_substitution",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "an actor attached to a sighting",
       "claim": {
         "claim_id": "C1",
@@ -162,7 +162,7 @@
     {
       "case_id": "F06",
       "category": "time_substitution",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "pickup moved one second earlier",
       "claim": {
         "claim_id": "C1",
@@ -184,7 +184,7 @@
     {
       "case_id": "F07",
       "category": "time_substitution",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "pickup end extended",
       "claim": {
         "claim_id": "C1",
@@ -206,7 +206,7 @@
     {
       "case_id": "F08",
       "category": "time_substitution",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "first sighting moved",
       "claim": {
         "claim_id": "C1",
@@ -228,7 +228,7 @@
     {
       "case_id": "F09",
       "category": "time_substitution",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "last sighting moved earlier",
       "claim": {
         "claim_id": "C1",
@@ -250,7 +250,7 @@
     {
       "case_id": "F10",
       "category": "time_substitution",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "last sighting moved into the hidden period",
       "claim": {
         "claim_id": "C1",
@@ -272,7 +272,7 @@
     {
       "case_id": "F11",
       "category": "wrong_predicate_or_citation",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "pickup restated as a put-down",
       "claim": {
         "claim_id": "C1",
@@ -294,7 +294,7 @@
     {
       "case_id": "F12",
       "category": "wrong_predicate_or_citation",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "first sighting cited as the last",
       "claim": {
         "claim_id": "C1",
@@ -316,7 +316,7 @@
     {
       "case_id": "F13",
       "category": "wrong_predicate_or_citation",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "a real pickup claim that cites the last-sighting event",
       "claim": {
         "claim_id": "C1",
@@ -338,7 +338,7 @@
     {
       "case_id": "F14",
       "category": "wrong_predicate_or_citation",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "hidden removal restated as a put-down",
       "claim": {
         "claim_id": "C1",
@@ -360,7 +360,7 @@
     {
       "case_id": "F15",
       "category": "wrong_predicate_or_citation",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "pickup restated as disposal in a zone",
       "claim": {
         "claim_id": "C1",
@@ -382,7 +382,7 @@
     {
       "case_id": "F16",
       "category": "nonexistent_event",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "citation to an event that does not exist",
       "claim": {
         "claim_id": "C1",
@@ -404,7 +404,7 @@
     {
       "case_id": "F17",
       "category": "nonexistent_event",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "citation to a far-out event number",
       "claim": {
         "claim_id": "C1",
@@ -426,7 +426,7 @@
     {
       "case_id": "F18",
       "category": "nonexistent_event",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "citation to an unknown occlusion event",
       "claim": {
         "claim_id": "C1",
@@ -448,7 +448,7 @@
     {
       "case_id": "F19",
       "category": "nonexistent_event",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "sighting cited by a missing event",
       "claim": {
         "claim_id": "C1",
@@ -470,7 +470,7 @@
     {
       "case_id": "F20",
       "category": "nonexistent_event",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "sighting cited by a missing event",
       "claim": {
         "claim_id": "C1",
@@ -492,7 +492,7 @@
     {
       "case_id": "F21",
       "category": "certainty_escalation",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "possible hidden removal stated as fact",
       "claim": {
         "claim_id": "C1",
@@ -514,7 +514,7 @@
     {
       "case_id": "F22",
       "category": "certainty_escalation",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "rejected pass-by stated as fact",
       "claim": {
         "claim_id": "C1",
@@ -536,7 +536,7 @@
     {
       "case_id": "F23",
       "category": "certainty_escalation",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "rejected pass-by stated as possible",
       "claim": {
         "claim_id": "C1",
@@ -558,7 +558,7 @@
     {
       "case_id": "F24",
       "category": "certainty_escalation",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "hidden removal escalated without actor",
       "claim": {
         "claim_id": "C1",
@@ -580,7 +580,7 @@
     {
       "case_id": "F25",
       "category": "certainty_escalation",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "rejected pass-by escalated and blamed",
       "claim": {
         "claim_id": "C1",
@@ -602,7 +602,7 @@
     {
       "case_id": "K01",
       "category": "clean",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "supported pickup with actor",
       "claim": {
         "claim_id": "C1",
@@ -624,7 +624,7 @@
     {
       "case_id": "K02",
       "category": "clean",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "first sighting",
       "claim": {
         "claim_id": "C1",
@@ -646,7 +646,7 @@
     {
       "case_id": "K03",
       "category": "clean",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "last sighting",
       "claim": {
         "claim_id": "C1",
@@ -668,7 +668,7 @@
     {
       "case_id": "K04",
       "category": "clean",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "first sighting",
       "claim": {
         "claim_id": "C1",
@@ -690,7 +690,7 @@
     {
       "case_id": "K05",
       "category": "clean",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "last sighting",
       "claim": {
         "claim_id": "C1",
@@ -712,7 +712,7 @@
     {
       "case_id": "K06",
       "category": "clean",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "hidden removal stated as possible",
       "claim": {
         "claim_id": "C1",
@@ -734,7 +734,7 @@
     {
       "case_id": "F26",
       "category": "stale_revision",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "pick_up claim citing a superseded revision",
       "claim": {
         "claim_id": "C1",
@@ -756,7 +756,7 @@
     {
       "case_id": "F27",
       "category": "stale_revision",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "first_seen claim citing a superseded revision",
       "claim": {
         "claim_id": "C1",
@@ -778,7 +778,7 @@
     {
       "case_id": "F28",
       "category": "stale_revision",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "last_seen claim citing a superseded revision",
       "claim": {
         "claim_id": "C1",
@@ -800,7 +800,7 @@
     {
       "case_id": "F29",
       "category": "stale_revision",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "first_seen claim citing a superseded revision",
       "claim": {
         "claim_id": "C1",
@@ -822,7 +822,7 @@
     {
       "case_id": "F30",
       "category": "stale_revision",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "last_seen claim citing a superseded revision",
       "claim": {
         "claim_id": "C1",
@@ -844,7 +844,7 @@
     {
       "case_id": "K07",
       "category": "clean",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "pick_up claim citing the current revision",
       "claim": {
         "claim_id": "C1",
@@ -866,7 +866,7 @@
     {
       "case_id": "K08",
       "category": "clean",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "first_seen claim citing the current revision",
       "claim": {
         "claim_id": "C1",
@@ -888,7 +888,7 @@
     {
       "case_id": "K09",
       "category": "clean",
-      "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+      "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
       "note": "last_seen claim citing the current revision",
       "claim": {
         "claim_id": "C1",
@@ -910,7 +910,7 @@
     {
       "case_id": "K10",
       "category": "clean",
-      "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+      "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
       "note": "first_seen claim citing the current revision",
       "claim": {
         "claim_id": "C1",

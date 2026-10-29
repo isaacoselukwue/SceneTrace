@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-29T11:30:46.072Z",
-  "software_commit": "93dafb1970accaf8a712e148b4b40a69bdf3eb36",
+  "generated_at": "2026-10-29T11:48:40.287Z",
+  "software_commit": "a912881a4445f2ed6a5e4562417621b43ff3fc9a",
   "config_sha256": "77b85d314aa958e2909856ef2f74a7a7cbdee6d8e0188d3eac70c7f5ef940445",
   "label_sha256": {
     "synthetic_bench_occlusion.label.json": "831ac3e6bfc424d65a8b55ec523a3ae020eb50ee93ed6e4b76da5d33899269fa",
@@ -29,7 +29,7 @@
       {
         "clip_id": "synthetic_bench_occlusion",
         "completed": true,
-        "analysis_id": "ana_19825b0adae04bd0b4c079a012a52dcc",
+        "analysis_id": "ana_e6f26fb64f2d47d395574c13b34ffc09",
         "run_mode": "recorded_real",
         "status": "completed",
         "labelled_action_events": 0,
@@ -93,7 +93,7 @@
       {
         "clip_id": "synthetic_bench_pickup",
         "completed": true,
-        "analysis_id": "ana_f5c035668ca948fb8f9b2c2170d30124",
+        "analysis_id": "ana_6f7c6629192f4c0f95cecd023cfe6417",
         "run_mode": "recorded_real",
         "status": "completed",
         "labelled_action_events": 1,
@@ -405,7 +405,8 @@
         "recall": 1.0,
         "f1": 1.0
       },
-      "note": "Visible-certainty events only. The baseline sees the whole proxy video and the object's first-frame box, but no tracks, candidates or evidence frames."
+      "note": "Visible-certainty events only. The baseline sees the whole proxy video and the object's first-frame box, but no tracks, candidates or evidence frames.",
+      "carried_over_from": "2026-10-29T11:30:46.072Z"
     }
   }
 }

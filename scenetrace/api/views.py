@@ -1,6 +1,7 @@
 """Assemble API DTOs from stored records. URLs are server routes by ID, never filesystem paths."""
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, cast
 
 from ..db import loads
@@ -14,6 +15,21 @@ API = "/api/v1"
 
 def asset_url(asset_id: str | None) -> str | None:
     return f"{API}/assets/{asset_id}" if asset_id else None
+
+
+def visibility_spans(states_by_frame: Mapping[int, str], *, frame_count: int, fps: int, duration_ms: int) -> list[S.VisibilitySpanOut]:
+    runs: list[list[Any]] = []
+    for frame in range(frame_count):
+        state = states_by_frame.get(frame, "unknown")
+        start_ms = round(frame * 1000 / fps)
+        end_ms = round((frame + 1) * 1000 / fps)
+        if duration_ms > start_ms:
+            end_ms = min(end_ms, duration_ms)
+        if runs and runs[-1][0] == state:
+            runs[-1][2] = end_ms
+        else:
+            runs.append([state, start_ms, end_ms])
+    return [S.VisibilitySpanOut(state=state, start_ms=start_ms, end_ms=end_ms) for state, start_ms, end_ms in runs]
 
 
 def clip_out(svc: Services, row: dict) -> S.ClipOut:

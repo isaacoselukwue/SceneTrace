@@ -28,6 +28,7 @@ from ..jobs.context import Services
 from ..jobs.pipeline import new_investigation
 from ..jobs.worker import Worker
 from ..media.normalise import proxy_frame_png
+from ..media.proc import MediaToolError
 from ..providers.factory import review_mode, reviewer_capability
 from ..security import SESSION_COOKIE, RateLimiter, Session, Sessions, check_csrf
 from . import schemas as S
@@ -223,6 +224,25 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                                max_pending_jobs=d["max_pending_jobs"]),
             demo_read_only=settings.demo_read_only, build={"version": "0.1.0", "commit": _commit(settings.root)})
 
+    def preview_frame(clip: dict, t_ms: int) -> tuple[int, str]:
+        frame = min(round(t_ms * clip["proxy_fps"] / 1000), clip["proxy_frame_count"] - 1)
+        proxy_dir = svc.storage.proxy_dir(clip["owner_id"], clip["id"])
+        out = proxy_dir / "frames" / f"f{frame:05d}.png"
+        if not out.exists():
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(proxy_frame_png(proxy_dir / "proxy.mp4", frame, fps=clip["proxy_fps"]))
+        return frame, svc.storage.register_asset(owner_id=clip["owner_id"], clip_id=clip["id"], path=out, kind="preview_frame",
+                                                 media_type="image/png", derived=True, public=clip["owner_id"] == "public")
+
+    def poster_time(analysis_id: str, duration_ms: int) -> int:
+        actions = [revision.record for revision in svc.store.current_events(analysis_id).values()
+                   if revision.record.event_type in ("pick_up", "put_down", "place_in_zone")
+                   and revision.record.status in ("supported", "plausible")]
+        if not actions:
+            return duration_ms // 2
+        first = min(actions, key=lambda record: record.t_start_ms)
+        return (first.t_start_ms + first.t_end_ms) // 2
+
     @app.get(f"{API}/demos", response_model=list[S.DemoOut])
     def demos() -> list[S.DemoOut]:
         out = []
@@ -233,11 +253,15 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                 "SELECT id, question FROM investigations WHERE analysis_id = ? AND status IN ('completed', 'partial') ORDER BY created_at",
                 (a["id"],))]
             usage = views.usage_out(svc.ledger.calls_for(analysis_id=a["recorded_from"] or a["id"]), a["rate_card_revision"])
+            try:
+                _frame, poster = preview_frame(clip, poster_time(a["id"], clip["duration_ms"] or 0))
+            except (MediaToolError, OSError, ValueError):
+                poster = None
             out.append(S.DemoOut(demo_id=d["id"], title=d["title"], description=d["description"], analysis_id=a["id"],
                                  clip_id=clip["id"], media_kind=clip["media_kind"], run_mode="recorded_real",
                                  recorded_at=a["recorded_at"], models=loads(a["models_json"], {}),
                                  original_processing_cost_microusd=usage.total_microusd, cost_status=usage.cost_status,
-                                 questions=questions, poster_url=None))
+                                 questions=questions, poster_url=views.asset_url(poster)))
         return out
 
     # Clips ----------------------------------------------------------------------------------------
@@ -355,14 +379,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         clip = clip_row(clip_id, s)
         if clip["status"] != "ready" or not 0 <= t_ms <= (clip["duration_ms"] or 0):
             raise AppError("INVALID_ARGUMENT", "That time is outside the clip.", status_code=400)
-        frame = min(round(t_ms * clip["proxy_fps"] / 1000), clip["proxy_frame_count"] - 1)
-        out = svc.storage.proxy_dir(clip["owner_id"], clip_id) / "frames" / f"f{frame:05d}.png"
-        if not out.exists():
-            out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_bytes(proxy_frame_png(svc.storage.proxy_dir(clip["owner_id"], clip_id) / "proxy.mp4", frame,
-                                            fps=clip["proxy_fps"]))
-        asset = svc.storage.register_asset(owner_id=clip["owner_id"], clip_id=clip_id, path=out, kind="preview_frame",
-                                           media_type="image/png", derived=True, public=clip["owner_id"] == "public")
+        frame, asset = preview_frame(clip, t_ms)
         return S.FrameOut(t_ms=round(frame * 1000 / clip["proxy_fps"]), proxy_frame_index=frame, width=clip["proxy_width"],
                           height=clip["proxy_height"], image_url=views.asset_url(asset) or "")
 
@@ -474,6 +491,15 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                                                                  detection_state=o.detection_state,
                                                                  confidence_bp=o.provider_confidence_bp,
                                                                  identity_warning=o.identity_warning) for o in rows])
+
+    @app.get(f"{API}/analyses/{{analysis_id}}/visibility", response_model=S.VisibilityOut)
+    def visibility(analysis_id: str, s: Session | None = Depends(session)) -> S.VisibilityOut:
+        a = analysis_row(analysis_id, s)
+        clip = svc.store.clip(a["clip_id"])
+        states = {o.proxy_frame_index: o.detection_state for o in svc.store.observations(analysis_id, entity_id="O1")}
+        return S.VisibilityOut(analysis_id=analysis_id, entity_id="O1", duration_ms=clip["duration_ms"] or 0,
+                               spans=views.visibility_spans(states, frame_count=clip["proxy_frame_count"] or 0,
+                                                            fps=clip["proxy_fps"] or 10, duration_ms=clip["duration_ms"] or 0))
 
     # Questions ---------------------------------------------------------------------------------------
     @app.post(f"{API}/analyses/{{analysis_id}}/questions", response_model=S.JobAccepted, status_code=202)

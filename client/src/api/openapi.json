@@ -3032,6 +3032,67 @@
     "title": "VerifyOut",
     "type": "object"
    },
+   "VisibilityOut": {
+    "additionalProperties": false,
+    "properties": {
+     "analysis_id": {
+      "title": "Analysis Id",
+      "type": "string"
+     },
+     "duration_ms": {
+      "title": "Duration Ms",
+      "type": "integer"
+     },
+     "entity_id": {
+      "title": "Entity Id",
+      "type": "string"
+     },
+     "spans": {
+      "items": {
+       "$ref": "#/components/schemas/VisibilitySpanOut"
+      },
+      "title": "Spans",
+      "type": "array"
+     }
+    },
+    "required": [
+     "analysis_id",
+     "entity_id",
+     "duration_ms",
+     "spans"
+    ],
+    "title": "VisibilityOut",
+    "type": "object"
+   },
+   "VisibilitySpanOut": {
+    "additionalProperties": false,
+    "properties": {
+     "end_ms": {
+      "title": "End Ms",
+      "type": "integer"
+     },
+     "start_ms": {
+      "title": "Start Ms",
+      "type": "integer"
+     },
+     "state": {
+      "enum": [
+       "observed",
+       "not_detected",
+       "unknown"
+      ],
+      "title": "State",
+      "type": "string"
+     }
+    },
+    "required": [
+     "state",
+     "start_ms",
+     "end_ms"
+    ],
+    "title": "VisibilitySpanOut",
+    "type": "object"
+   },
    "ZoneIn": {
     "additionalProperties": false,
     "properties": {
@@ -3445,6 +3506,45 @@
      }
     },
     "summary": "Bind Selection"
+   }
+  },
+  "/api/v1/analyses/{analysis_id}/visibility": {
+   "get": {
+    "operationId": "visibility_api_v1_analyses__analysis_id__visibility_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "analysis_id",
+      "required": true,
+      "schema": {
+       "title": "Analysis Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/VisibilityOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Visibility"
    }
   },
   "/api/v1/assets/{asset_id}": {

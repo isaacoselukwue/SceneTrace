@@ -15,6 +15,8 @@ export type AssessmentOut = Schemas["AssessmentOut"];
 export type EntityOut = Schemas["EntityOut"];
 export type ObservationOut = Schemas["ObservationOut"];
 export type ObservationsPage = Schemas["ObservationsPage"];
+export type VisibilityOut = Schemas["VisibilityOut"];
+export type VisibilitySpanOut = Schemas["VisibilitySpanOut"];
 export type InvestigationOut = Schemas["InvestigationOut"];
 export type AnswerSentenceOut = Schemas["AnswerSentenceOut"];
 export type JobOut = Schemas["JobOut"];
@@ -102,6 +104,7 @@ export const api = {
   analysis: (id: string) => request<AnalysisOut>("GET", `${V1}/analyses/${id}`),
   observations: (id: string, t0: number, t1: number) =>
     request<ObservationsPage>("GET", `${V1}/analyses/${id}/observations?t0_ms=${t0}&t1_ms=${t1}`),
+  visibility: (id: string) => request<VisibilityOut>("GET", `${V1}/analyses/${id}/visibility`),
   ask: (analysisId: string, question: string) =>
     request<JobAccepted>("POST", `${V1}/analyses/${analysisId}/questions`, {
       question,

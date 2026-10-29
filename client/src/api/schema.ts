@@ -107,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analyses/{analysis_id}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Visibility */
+        get: operations["visibility_api_v1_analyses__analysis_id__visibility_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assets/{asset_id}": {
         parameters: {
             query?: never;
@@ -1377,6 +1394,29 @@ export interface components {
             /** Note */
             note: string;
         };
+        /** VisibilityOut */
+        VisibilityOut: {
+            /** Analysis Id */
+            analysis_id: string;
+            /** Duration Ms */
+            duration_ms: number;
+            /** Entity Id */
+            entity_id: string;
+            /** Spans */
+            spans: components["schemas"]["VisibilitySpanOut"][];
+        };
+        /** VisibilitySpanOut */
+        VisibilitySpanOut: {
+            /** End Ms */
+            end_ms: number;
+            /** Start Ms */
+            start_ms: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "observed" | "not_detected" | "unknown";
+        };
         /** ZoneIn */
         ZoneIn: {
             /** Label */
@@ -1618,6 +1658,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    visibility_api_v1_analyses__analysis_id__visibility_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibilityOut"];
                 };
             };
             /** @description Validation Error */

@@ -321,6 +321,19 @@ class ObservationOut(Out):
     identity_warning: bool
 
 
+class VisibilitySpanOut(Out):
+    state: Literal["observed", "not_detected", "unknown"]
+    start_ms: int
+    end_ms: int
+
+
+class VisibilityOut(Out):
+    analysis_id: str
+    entity_id: str
+    duration_ms: int
+    spans: list[VisibilitySpanOut]
+
+
 class ObservationsPage(Out):
     analysis_id: str
     t0_ms: int

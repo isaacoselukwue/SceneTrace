@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { AnalysisOut, EvidenceOut } from "../api/client";
+import { candidateActors, describeEvent } from "../lib/events";
 import { whyNotSupported } from "../lib/explain";
-import { clipTime, EVENT_LABELS, interval, shortHash } from "../lib/format";
+import { clipTime, interval, shortHash } from "../lib/format";
 import { StatusBadge } from "./Badges";
+import { Icon } from "./Icons";
 
 const ASSESSMENT_FIELDS: [string, string][] = [
   ["visible_before", "Visible before"],
@@ -11,14 +13,15 @@ const ASSESSMENT_FIELDS: [string, string][] = [
   ["support_changed", "Support changed"],
   ["carried_motion_visible", "Carried motion visible"],
 ];
+const ROLE_TEXT: Record<string, string> = { before: "Before", during: "During", after: "After", inspection: "Inspection" };
 
 function Digest({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button type="button" className="digest" title={value} onClick={() => {
+    <button type="button" className="digest" title={`SHA-256 ${value}`} aria-label={`Copy SHA-256 digest ${shortHash(value)}`} onClick={() => {
       navigator.clipboard?.writeText(value).then(() => setCopied(true));
     }}>
-      {shortHash(value)}{copied ? " (copied)" : ""}
+      {shortHash(value)}{copied ? " copied" : ""}
     </button>
   );
 }
@@ -37,8 +40,11 @@ export function EvidenceDrawer({ analysis, eventId, onClose, onSeek }: {
     close.current?.focus();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflow;
       previous?.focus();
     };
   }, [onClose]);
@@ -51,92 +57,111 @@ export function EvidenceDrawer({ analysis, eventId, onClose, onSeek }: {
   const assessments = analysis.assessments.filter((a) => a.candidate_id === event.candidate_id);
   const reasons = whyNotSupported(r.reason_codes);
   const frames: EvidenceOut[] = tab === "source" ? raw : raw.map((e) => annotated.get(e.proxy_frame_index) ?? e);
+  const tone = r.status === "supported" ? "ok" : r.status === "rejected" ? "bad" : "warn";
   return (
     <div className="drawer-backdrop" onClick={onClose}>
       <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" onClick={(e) => e.stopPropagation()}>
         <header className="drawer-head">
-          <div>
-            <h2 id="drawer-title">{EVENT_LABELS[r.event_type]} {r.event_id}, revision {r.revision}</h2>
-            <p><StatusBadge status={r.status} /> {event.status_meaning}</p>
-            <p className="mono">{interval(r.t_start_ms, r.t_end_ms)}{r.actor_id ? ` · actor ${r.actor_id}` : ""}{r.zone_id ? ` · zone ${r.zone_id}` : ""}</p>
+          <div className="drawer-title">
+            <p className="eyebrow-text">Evidence {r.event_id} · revision {r.revision}</p>
+            <h2 id="drawer-title">{describeEvent(event, candidateActors(analysis, event))}</h2>
+            <div className="drawer-badges">
+              <StatusBadge status={r.status} />
+              <span className="badge tone-neutral mono">{interval(r.t_start_ms, r.t_end_ms)}</span>
+              {r.actor_id && <span className="badge tone-neutral">Actor {r.actor_id}</span>}
+              {r.zone_id && <span className="badge tone-neutral">Zone {r.zone_id}</span>}
+            </div>
           </div>
-          <button ref={close} type="button" className="secondary" onClick={onClose}>Close</button>
+          <button ref={close} type="button" className="icon-button" onClick={onClose} aria-label="Close evidence">
+            <Icon name="x" size={20} />
+          </button>
         </header>
-        {reasons.length > 0 && (
-          <section>
-            <h3>{r.status === "supported" ? "Why it is supported" : r.status === "rejected" ? "Why not supported?" : "What is missing"}</h3>
-            <ul>{reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
-          </section>
-        )}
-        <section>
-          <div className="tabs" role="tablist" aria-label="Frame version">
-            <button role="tab" aria-selected={tab === "source"} type="button" onClick={() => setTab("source")}>Original frames</button>
-            <button role="tab" aria-selected={tab === "annotated"} type="button" onClick={() => setTab("annotated")}>Annotated copies</button>
-          </div>
-          <p className="fineprint">
-            {tab === "source"
-              ? "Original pixels decoded from the uploaded file at the mapped source frame. Nothing is drawn on them."
-              : "Derived copies with neutral O1 and P labels. They are hashed separately from the originals."}
-          </p>
-          <div className="frames">
-            {frames.map((e) => (
-              <figure key={e.evidence_id}>
-                <img src={e.image_url} alt={`${e.role} frame at ${clipTime(e.t_ms)}`} loading="lazy" width={e.width} height={e.height} />
-                <figcaption>
-                  <strong>{e.evidence_id}</strong> {e.role} · {clipTime(e.t_ms)}
-                  <button type="button" className="link" onClick={() => onSeek(e.t_ms)}>Seek</button>
-                  <br />
-                  <span className="mono">source frame {e.source_frame_index} · PTS {clipTime(e.source_pts_ms)} · </span>
-                  <Digest value={e.asset_sha256} />
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </section>
-        {assessments.length > 0 && (
-          <section>
-            <h3>Structured assessments</h3>
-            {assessments.map((a) => (
-              <div key={a.assessment_id} className="assessment">
-                <p className="mono">{a.model_id} · {a.purpose} · {a.status}</p>
-                {a.result ? (
-                  <table>
-                    <tbody>
-                      <tr><th scope="row">Verdict</th><td>{String(a.result.verdict)}</td></tr>
-                      {ASSESSMENT_FIELDS.map(([key, label]) => (
-                        <tr key={key}><th scope="row">{label}</th><td>{String(a.result?.[key])}</td></tr>
-                      ))}
-                      <tr><th scope="row">Actor named</th><td>{String(a.result.actor_assignment ?? "none")}</td></tr>
-                      <tr><th scope="row">Reason codes</th><td>{(a.result.reason_codes as string[]).join(", ") || "none"}</td></tr>
-                    </tbody>
-                  </table>
-                ) : <p className="muted">No valid structured result was returned, so this assessment cannot support the event.</p>}
+        <div className="drawer-body">
+          <p className="status-meaning">{event.status_meaning}</p>
+          {reasons.length > 0 && (
+            <section className={`callout tone-${tone}`}>
+              <h3>{r.status === "supported" ? "Why it is supported" : r.status === "rejected" ? "Why not supported?" : "What is missing"}</h3>
+              <ul>{reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+            </section>
+          )}
+          <section className="drawer-section" aria-labelledby="frames-title">
+            <div className="section-row">
+              <h3 id="frames-title">Frames</h3>
+              <div className="tabs compact-tabs" role="tablist" aria-label="Frame version">
+                <button role="tab" aria-selected={tab === "source"} type="button" onClick={() => setTab("source")}>Original frames</button>
+                <button role="tab" aria-selected={tab === "annotated"} type="button" onClick={() => setTab("annotated")}>Annotated copies</button>
               </div>
-            ))}
-          </section>
-        )}
-        {candidate && (
-          <section>
-            <h3>Geometric cues</h3>
-            <p className="fineprint">Distances are in basis points of the object's size. Closeness is not contact.</p>
-            <dl className="cues">
-              {Object.entries(candidate.cues).map(([k, v]) => (
-                <div key={k}><dt>{k.replaceAll("_", " ")}</dt><dd>{v === null ? "n/a" : String(v)}</dd></div>
+            </div>
+            <p className="fineprint">
+              {tab === "source"
+                ? "Original pixels decoded from the uploaded file at the mapped source frame. Nothing is drawn on them."
+                : "Derived copies with neutral O1 and P labels. They are hashed separately from the originals."}
+            </p>
+            {frames.length === 0 && <p className="muted">No frames were extracted for this event.</p>}
+            <div className="frames">
+              {frames.map((e) => (
+                <figure key={e.evidence_id}>
+                  <img src={e.image_url} alt={`${e.role} frame at ${clipTime(e.t_ms)}`} loading="lazy" width={e.width} height={e.height} />
+                  <figcaption>
+                    <span className="frame-role">
+                      <strong>{e.evidence_id}</strong>
+                      <span className="badge tone-neutral">{ROLE_TEXT[e.role] ?? e.role}</span>
+                      <button type="button" className="time-chip" onClick={() => onSeek(e.t_ms)} aria-label={`Seek video to ${clipTime(e.t_ms)}`}>
+                        <Icon name="play" size={10} /> {clipTime(e.t_ms)}
+                      </button>
+                    </span>
+                    <span className="frame-facts">Source frame {e.source_frame_index} · PTS {clipTime(e.source_pts_ms)}</span>
+                    <span className="frame-facts">SHA-256 <Digest value={e.asset_sha256} /></span>
+                  </figcaption>
+                </figure>
               ))}
-            </dl>
+            </div>
           </section>
-        )}
-        <section>
-          <h3>Revision history</h3>
-          <ol>
-            {event.history.map((h) => (
-              <li key={h.record.revision} className="mono">
-                revision {h.record.revision}: {h.record.status} · <Digest value={h.record_sha256} />
-              </li>
-            ))}
-          </ol>
-          <p className="fineprint">Revisions are append-only. An answer always records which revision it used.</p>
-        </section>
+          {assessments.length > 0 && (
+            <section className="drawer-section">
+              <h3>Structured assessments</h3>
+              {assessments.map((a) => (
+                <div key={a.assessment_id} className="assessment">
+                  <p className="assessment-head"><span className="mono">{a.model_id}</span> <span className="muted">{a.purpose} · {a.status}</span></p>
+                  {a.result ? (
+                    <table>
+                      <tbody>
+                        <tr><th scope="row">Verdict</th><td>{String(a.result.verdict)}</td></tr>
+                        {ASSESSMENT_FIELDS.map(([key, label]) => (
+                          <tr key={key}><th scope="row">{label}</th><td>{String(a.result?.[key])}</td></tr>
+                        ))}
+                        <tr><th scope="row">Actor named</th><td>{String(a.result.actor_assignment ?? "none")}</td></tr>
+                        <tr><th scope="row">Reason codes</th><td className="codes">{(a.result.reason_codes as string[]).join(", ") || "none"}</td></tr>
+                      </tbody>
+                    </table>
+                  ) : <p className="muted">No valid structured result was returned, so this assessment cannot support the event.</p>}
+                </div>
+              ))}
+            </section>
+          )}
+          {candidate && (
+            <section className="drawer-section">
+              <h3>Geometric cues</h3>
+              <p className="fineprint">Distances are in basis points of the object's size. Closeness is not contact.</p>
+              <dl className="cues">
+                {Object.entries(candidate.cues).map(([k, v]) => (
+                  <div key={k}><dt>{k.replaceAll("_", " ")}</dt><dd>{v === null ? "n/a" : String(v)}</dd></div>
+                ))}
+              </dl>
+            </section>
+          )}
+          <section className="drawer-section">
+            <h3>Revision history</h3>
+            <ol className="revisions">
+              {event.history.map((h) => (
+                <li key={h.record.revision}>
+                  <span>Revision {h.record.revision}</span> <StatusBadge status={h.record.status} /> <Digest value={h.record_sha256} />
+                </li>
+              ))}
+            </ol>
+            <p className="fineprint">Revisions are append-only. An answer always records which revision it used.</p>
+          </section>
+        </div>
       </aside>
     </div>
   );

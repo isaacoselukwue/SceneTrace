@@ -1,5 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { api, type AnalysisOut, type ClipOut, type ObservationOut } from "../api/client";
+import { api, type AnalysisOut, type ClipOut, type ObservationOut, type VisibilitySpanOut } from "../api/client";
+import { candidateActors, describeEvent, sortedEvents } from "../lib/events";
 import { clipTime } from "../lib/format";
 import { containRect, frameAt, type Rect } from "../lib/geometry";
 
@@ -8,30 +9,36 @@ export interface VideoHandle {
 }
 
 const WINDOW_MS = 10_000;
-const COLOURS: Record<string, string> = { O: "#0f9f8f", P: "#d97706" };
+const LANE_PX = 18;
+const MAX_LANES = 3;
+const COLOURS: Record<string, string> = { O: "#14b8a6", P: "#f59e0b" };
+const VISIBILITY_TEXT: Record<VisibilitySpanOut["state"], string> = {
+  observed: "Observed",
+  not_detected: "Not detected",
+  unknown: "Not analysed",
+};
 
-// Plays the tracking proxy and draws only observed boxes/masks at the current frame. Missing
-// frames are never interpolated: the overlay hides and the status line says why.
-export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: AnalysisOut; onTime?: (ms: number) => void }>(
-  function VideoCanvas({ clip, analysis, onTime }, ref) {
+export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: AnalysisOut }>(
+  function VideoCanvas({ clip, analysis }, ref) {
     const video = useRef<HTMLVideoElement>(null);
-    const stage = useRef<HTMLDivElement>(null);
     const [rect, setRect] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
     const [frame, setFrame] = useState(0);
     const [overlays, setOverlays] = useState(true);
     const [windows, setWindows] = useState<Record<number, ObservationOut[]>>({});
+    const [spans, setSpans] = useState<VisibilitySpanOut[]>([]);
     const width = clip.proxy_width ?? 0;
     const height = clip.proxy_height ?? 0;
     const fps = clip.proxy_fps ?? 10;
+    const durationMs = clip.duration_ms ?? 0;
+    const finished = ["completed", "partial"].includes(analysis.status);
 
-    useImperativeHandle(ref, () => ({
-      seek(ms: number) {
-        if (video.current) {
-          video.current.pause();
-          video.current.currentTime = ms / 1000 + 0.001;
-        }
-      },
-    }));
+    const seek = useCallback((ms: number) => {
+      if (video.current) {
+        video.current.pause();
+        video.current.currentTime = Math.max(0, ms) / 1000 + 0.001;
+      }
+    }, []);
+    useImperativeHandle(ref, () => ({ seek }), [seek]);
 
     const measure = useCallback(() => {
       const el = video.current;
@@ -51,12 +58,18 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
       let handle = 0;
       const tick = () => {
         setFrame(frameAt(el.currentTime, fps));
-        onTime?.(Math.round(el.currentTime * 1000));
         handle = requestAnimationFrame(tick);
       };
       handle = requestAnimationFrame(tick);
       return () => cancelAnimationFrame(handle);
-    }, [fps, onTime]);
+    }, [fps]);
+
+    useEffect(() => {
+      if (!finished) return;
+      let cancelled = false;
+      api.visibility(analysis.analysis_id).then((v) => !cancelled && setSpans(v.spans)).catch(() => setSpans([]));
+      return () => { cancelled = true; };
+    }, [analysis.analysis_id, finished]);
 
     const windowIndex = Math.floor((frame * 1000) / fps / WINDOW_MS);
     useEffect(() => {
@@ -78,17 +91,18 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
       [windows, windowIndex, frame],
     );
     const target = current.find((o) => o.entity_id === "O1");
+    const nowMs = (frame * 1000) / fps;
     const status = !target
       ? "Loading tracks for this moment."
       : target.detection_state === "observed"
-        ? `O1 observed at ${clipTime((frame * 1000) / fps)}.`
+        ? `O1 observed at ${clipTime(nowMs)}.`
         : target.detection_state === "unknown"
           ? "O1 state unknown here: this frame was not fully analysed."
           : "O1 not detected in this frame. Not detected is not the same as absent.";
 
     return (
       <section className="video-panel" aria-label="Video with tracking overlays">
-        <div className="stage" ref={stage}>
+        <div className="stage">
           <video
             ref={video}
             src={clip.video_url ?? undefined}
@@ -121,7 +135,7 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
                       {o.mask_svg && <path d={o.mask_svg} fill={colour} fillOpacity={0.35} stroke={colour} strokeWidth={1.5} />}
                       <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} fill="none" stroke={colour} strokeWidth={2}
                         strokeDasharray={o.mask_svg ? undefined : "6 4"} />
-                      <rect x={x0} y={Math.max(0, y0 - 18)} width={o.entity_id.length * 9 + 10} height={18} fill={colour} />
+                      <rect x={x0} y={Math.max(0, y0 - 18)} width={o.entity_id.length * 9 + 10} height={18} rx={3} fill={colour} />
                       <text x={x0 + 5} y={Math.max(13, y0 - 5)} className="overlay-label">{o.entity_id}</text>
                     </g>
                   );
@@ -129,14 +143,17 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
             </svg>
           )}
         </div>
+        {durationMs > 0 && (
+          <Timeline analysis={analysis} durationMs={durationMs} nowMs={nowMs} spans={spans} onSeek={seek} />
+        )}
         <div className="video-meta">
-          <label className="toggle">
+          <label className="switch">
             <input type="checkbox" checked={overlays} onChange={(e) => setOverlays(e.target.checked)} /> Show overlays
           </label>
           <span className="legend">
-            <span className="swatch swatch-o" aria-hidden="true" /> O1 mask and box
-            <span className="swatch swatch-p" aria-hidden="true" /> P tracks (boxes, not masks)
-            {analysis.zones.length > 0 && <><span className="swatch swatch-z" aria-hidden="true" /> drawn zones</>}
+            <span className="legend-item"><span className="swatch swatch-o" aria-hidden="true" /> O1 mask and box</span>
+            <span className="legend-item"><span className="swatch swatch-p" aria-hidden="true" /> P tracks (boxes)</span>
+            {analysis.zones.length > 0 && <span className="legend-item"><span className="swatch swatch-z" aria-hidden="true" /> Zones</span>}
           </span>
           <span className="video-status" aria-live="off">{status}</span>
         </div>
@@ -144,3 +161,66 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
     );
   },
 );
+
+function Timeline({ analysis, durationMs, nowMs, spans, onSeek }: {
+  analysis: AnalysisOut;
+  durationMs: number;
+  nowMs: number;
+  spans: VisibilitySpanOut[];
+  onSeek: (ms: number) => void;
+}) {
+  const track = useRef<HTMLDivElement>(null);
+  const share = (ms: number) => Math.min(100, Math.max(0, (ms / durationMs) * 100));
+  const percent = (ms: number) => `${share(ms)}%`;
+  const events = sortedEvents(analysis);
+  const states = new Set(spans.map((s) => s.state));
+  const laneEnds: number[] = [];
+  const placed = events.map((event) => {
+    const record = event.current.record;
+    const start = share(record.t_start_ms);
+    const end = share(record.t_end_ms);
+    let lane = laneEnds.findIndex((laneEnd) => laneEnd + 3 <= start);
+    if (lane === -1) lane = laneEnds.length < MAX_LANES ? laneEnds.length : MAX_LANES - 1;
+    laneEnds[lane] = Math.max(laneEnds[lane] ?? 0, end);
+    return { event, record, start, end, lane };
+  });
+  return (
+    <div className="timeline">
+      <div className="timeline-events" style={{ height: Math.max(1, laneEnds.length) * LANE_PX }}>
+        {placed.map(({ event, record, start, end, lane }) => {
+          const label = describeEvent(event, candidateActors(analysis, event));
+          return (
+            <button key={record.event_id} type="button" className={`marker status-${record.status}`}
+              style={{ left: `calc(${start}% - 7px)`, width: `calc(${end - start}% + 14px)`, top: lane * LANE_PX }}
+              title={`${record.event_id}: ${label}`}
+              aria-label={`Seek to ${record.event_id}, ${label}, at ${clipTime(record.t_start_ms)}`}
+              onClick={() => onSeek(record.t_start_ms)} />
+          );
+        })}
+      </div>
+      <div className="timeline-track" ref={track} aria-hidden="true" onClick={(e) => {
+        const bounds = track.current?.getBoundingClientRect();
+        if (bounds && bounds.width > 0) onSeek(((e.clientX - bounds.left) / bounds.width) * durationMs);
+      }}>
+        {spans.map((s) => (
+          <span key={s.start_ms} className={`vis vis-${s.state}`}
+            style={{ left: percent(s.start_ms), width: `${((s.end_ms - s.start_ms) / durationMs) * 100}%` }} />
+        ))}
+        <span className="playhead" style={{ left: percent(nowMs) }} />
+      </div>
+      <div className="timeline-scale" aria-hidden="true">
+        <span>{clipTime(0)}</span>
+        <span>{clipTime(durationMs)}</span>
+      </div>
+      {spans.length > 0 && (
+        <p className="timeline-legend">
+          <span className="legend-title">O1 visibility</span>
+          {(["observed", "not_detected", "unknown"] as const).filter((s) => states.has(s)).map((s) => (
+            <span key={s} className="legend-item"><span className={`legend-swatch vis-${s}`} aria-hidden="true" /> {VISIBILITY_TEXT[s]}</span>
+          ))}
+          <span className="legend-item"><span className="legend-dot" aria-hidden="true" /> Events</span>
+        </p>
+      )}
+    </div>
+  );
+}
