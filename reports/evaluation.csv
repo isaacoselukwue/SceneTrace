@@ -1,0 +1,5 @@
+section,clip_id,arm,tp,fp,fn,precision,recall,f1
+synthetic_smoke,synthetic_bench_occlusion,full_system,0,0,0,,,
+synthetic_smoke,synthetic_bench_occlusion,geometry_only,0,1,0,0.0,,0.0
+synthetic_smoke,synthetic_bench_pickup,full_system,1,0,0,1.0,1.0,1.0
+synthetic_smoke,synthetic_bench_pickup,geometry_only,1,0,0,1.0,1.0,1.0

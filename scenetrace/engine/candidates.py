@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Any, cast
 
 from ..domain import Candidate, Coverage, Entity, FrameMap, Observation, Zone
 from .config import DEFAULT_ENGINE_CONFIG, EngineConfig
@@ -153,7 +154,7 @@ def _drafts(track: TargetTrack, zones: list[Zone], config: EngineConfig) -> list
     first, last = segments[0][0], segments[-1][-1]
     drafts.append(Draft("first_seen", first.t_ms, first.t_ms))
     carried = False
-    for index, (seg, runs) in enumerate(zip(segments, all_runs)):
+    for index, (seg, runs) in enumerate(zip(segments, all_runs, strict=True)):
         nxt = segments[index + 1] if index + 1 < len(segments) else None
         if index > 0:
             prev, prev_runs = segments[index - 1], all_runs[index - 1]
@@ -217,10 +218,10 @@ def _pass_bys(track: TargetTrack, run: list[Sample], run_ends_in_change: bool, c
     run_end_t = run[-1].t_ms
     for person in sorted(track.people, key=lambda p: int(p[1:])):
         streak: list[Sample] = []
-        for sample in [*run, None]:
+        for sample in [*run, None]:  # the trailing None flushes the last streak
             d = None if sample is None else track.near(person, sample.frame, sample.box)
             if d is not None and d <= limit:
-                streak.append(sample)
+                streak.append(sample)  # type: ignore[arg-type]  # d is None when sample is None
                 continue
             if len(streak) >= config.proximity_persistence_samples:
                 if not (run_ends_in_change and streak[-1].t_ms >= run_end_t - 1000):
@@ -267,7 +268,7 @@ def generate_candidates(*, observations: list[Observation], entities: list[Entit
             codes.append("BOUNDARY_WINDOW")
         if draft.kind in INTERACTION_TYPES and not draft.actors:
             codes.append("ACTOR_NOT_ESTABLISHED")
-        candidate = Candidate(candidate_id=f"K{number}", candidate_type=draft.kind, t_start_ms=draft.t_start,
+        candidate = Candidate(candidate_id=f"K{number}", candidate_type=cast(Any, draft.kind), t_start_ms=draft.t_start,
                               t_end_ms=draft.t_end, window_start_ms=w0, window_end_ms=w1,
                               actor_candidates=sorted(set(draft.actors), key=lambda p: int(p[1:])), zone_id=draft.zone,
                               reason_codes=sorted(set(codes)))

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ..config import Settings
-from ..domain import AnswerDraft, Claim, Plan
+from ..domain import AnswerDraft, Claim
 from ..errors import BudgetExceeded
 from ..providers.base import ProviderError, ProviderSet, RunContext
 from ..providers.fixture_reasoning import keyword_plan

@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+!.env.example
+.venv
+.local
+.claude
+client/node_modules
+client/dist
+client/test-results
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+samples/private

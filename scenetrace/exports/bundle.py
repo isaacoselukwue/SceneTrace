@@ -41,7 +41,7 @@ def _write_json(path: Path, value: object) -> None:
 
 
 def build_export(svc: Services, job: dict, cancel: CancelToken) -> str:
-    export = dict(svc.db.one("SELECT * FROM exports WHERE id = ?", (job["export_id"],)))
+    export = dict(svc.db.require("SELECT * FROM exports WHERE id = ?", (job["export_id"],), "export"))
     analysis = svc.store.analysis(export["analysis_id"])
     clip = svc.store.clip(analysis["clip_id"])
     owner = clip["owner_id"]

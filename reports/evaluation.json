@@ -1,0 +1,269 @@
+{
+  "generated_at": "2026-10-29T10:37:40.737Z",
+  "software_commit": "289752e823e0618e5c40b28a7e3510173dc35545",
+  "config_sha256": "77b85d314aa958e2909856ef2f74a7a7cbdee6d8e0188d3eac70c7f5ef940445",
+  "label_sha256": {
+    "synthetic_bench_occlusion.label.json": "831ac3e6bfc424d65a8b55ec523a3ae020eb50ee93ed6e4b76da5d33899269fa",
+    "synthetic_bench_pickup.label.json": "b972d08ae72bd1327111761a92e53d6eabd71aed343305f800be5498074656d9"
+  },
+  "real_video": {
+    "status": "not_measured",
+    "real_clips_evaluated": 0,
+    "held_out_labels_found": 0,
+    "metrics": {
+      "action_event_f1": null,
+      "actor_accuracy": null,
+      "unsupported_assertion_rate": null,
+      "useful_answer_coverage": null,
+      "median_cold_ms": null,
+      "median_warm_ms": null,
+      "median_analysis_microusd": null
+    },
+    "note": "No owned, consented, labelled real clips exist yet. Real-video performance is not measured."
+  },
+  "synthetic_smoke": {
+    "status": "measured",
+    "media": "synthetic drawn animations rendered by tools/render_synthetic_clip.py",
+    "not_real_video_evidence": true,
+    "clips": [
+      {
+        "clip_id": "synthetic_bench_occlusion",
+        "completed": true,
+        "analysis_id": "ana_601600a20742456f87459e4610f3d6b2",
+        "run_mode": "recorded_real",
+        "status": "completed",
+        "labelled_action_events": 0,
+        "unobservable_labelled_events": 1,
+        "full_system": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "pairs": []
+        },
+        "geometry_only": {
+          "tp": 0,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": 0.0,
+          "pairs": []
+        },
+        "actor": {
+          "observable_matched": 0,
+          "assigned": 0,
+          "correct": 0,
+          "wrong_confident": 0,
+          "accuracy": null,
+          "coverage": null
+        },
+        "actor_association": {
+          "P1": "blocker"
+        },
+        "questions": {
+          "rows": [
+            {
+              "question": "Who took the bottle?",
+              "asked": true,
+              "observable": false,
+              "answered_correctly": false,
+              "abstained": true,
+              "wrong_assertions": 0,
+              "sentences": [
+                "O1 was first observed at 00:00.000 [E1].",
+                "O1 was last observed at 00:07.500 [E3].",
+                "The available evidence does not establish an actor."
+              ]
+            },
+            {
+              "question": "Where was the bottle last seen?",
+              "asked": true,
+              "observable": true,
+              "answered_correctly": false,
+              "abstained": true,
+              "wrong_assertions": 0,
+              "sentences": [
+                "The object's current location is unknown.",
+                "Visibility is insufficient to establish what happened."
+              ]
+            }
+          ],
+          "observable_asked": 1,
+          "useful_answers": 0,
+          "abstentions": 2,
+          "unobservable_asked": 1,
+          "correct_abstentions": 1
+        }
+      },
+      {
+        "clip_id": "synthetic_bench_pickup",
+        "completed": true,
+        "analysis_id": "ana_94f1f5d01a4e4d828e6e69cb1ff4ba9d",
+        "run_mode": "recorded_real",
+        "status": "completed",
+        "labelled_action_events": 1,
+        "unobservable_labelled_events": 0,
+        "full_system": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "pairs": [
+            [
+              "E3",
+              "L1"
+            ]
+          ]
+        },
+        "geometry_only": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "pairs": [
+            [
+              "K3",
+              "L1"
+            ]
+          ]
+        },
+        "actor": {
+          "observable_matched": 1,
+          "assigned": 1,
+          "correct": 1,
+          "wrong_confident": 0,
+          "accuracy": 1.0,
+          "coverage": 1.0
+        },
+        "actor_association": {
+          "P1": "passer",
+          "P2": "picker"
+        },
+        "questions": {
+          "rows": [
+            {
+              "question": "Who picked up the bottle?",
+              "asked": true,
+              "observable": true,
+              "answered_correctly": true,
+              "abstained": false,
+              "wrong_assertions": 0,
+              "sentences": [
+                "P2 picked up O1 at 00:13.500 to 00:13.600 [E3]."
+              ]
+            },
+            {
+              "question": "What happened to the bottle?",
+              "asked": true,
+              "observable": true,
+              "answered_correctly": true,
+              "abstained": false,
+              "wrong_assertions": 0,
+              "sentences": [
+                "O1 was first observed at 00:00.000 [E1].",
+                "P2 picked up O1 at 00:13.500 to 00:13.600 [E3].",
+                "The object's current location is unknown.",
+                "Visibility is insufficient to establish what happened."
+              ]
+            },
+            {
+              "question": "Did anyone touch the bottle between 00:04 and 00:08?",
+              "asked": true,
+              "observable": true,
+              "answered_correctly": false,
+              "abstained": false,
+              "wrong_assertions": 0,
+              "sentences": [
+                "No supported event is available for this question.",
+                "No supported interaction was found between 00:04.000 and 00:08.000 in the analysed footage. This does not prove that none happened."
+              ]
+            }
+          ],
+          "observable_asked": 3,
+          "useful_answers": 2,
+          "abstentions": 0,
+          "unobservable_asked": 0,
+          "correct_abstentions": 0
+        }
+      }
+    ],
+    "pooled": {
+      "clips": 2,
+      "full_system": {
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "geometry_only": {
+        "tp": 1,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667
+      },
+      "actor": {
+        "observable_matched": 1,
+        "correct": 1,
+        "assigned": 1,
+        "wrong_confident": 0,
+        "accuracy": 1.0,
+        "coverage": 1.0
+      },
+      "questions": {
+        "asked": 5,
+        "observable": 4,
+        "useful_answers": 2,
+        "useful_answer_coverage": 0.5,
+        "abstention_rate": 0.4,
+        "unobservable": 1,
+        "correct_abstention": 1.0
+      }
+    },
+    "note": "Two drawn clips with ground truth taken from the renderer. A smoke check of the whole pipeline on recorded live model outputs, not a benchmark. The development hero clip is included, so these numbers say nothing about held-out performance."
+  },
+  "cost_latency": {
+    "source": "original live runs of the two synthetic demo clips (recorded 29 October 2026)",
+    "cold_total_ms": {
+      "n": 2,
+      "median": 32929.5,
+      "min": 25430,
+      "max": 40429
+    },
+    "cold_cost_microusd": {
+      "n": 2,
+      "median": 89112.5,
+      "min": 76935,
+      "max": 101290
+    },
+    "warm_question_ms": {
+      "n": 5,
+      "median": 18347,
+      "min": 8490,
+      "max": 31563
+    },
+    "warm_question_cost_microusd": {
+      "n": 5,
+      "median": 40869,
+      "min": 12459,
+      "max": 50801
+    },
+    "note": "Small n from synthetic clips. Costs are computed from provider-reported usage and the dated rate card."
+  },
+  "arms": {
+    "A_native_video_baseline": "not_run",
+    "B_geometry_only": "scored offline from stored candidates",
+    "C_full_system": "scored from recorded live runs",
+    "D_without_reviewer": "not_run"
+  }
+}

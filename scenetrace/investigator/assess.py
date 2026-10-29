@@ -1,6 +1,8 @@
 """Structured visual assessment of one candidate, validated locally before it is stored."""
 from __future__ import annotations
 
+from typing import Any, cast
+
 from ..config import Settings
 from ..domain import AssessmentRecord, AssessmentResult, Candidate, EvidenceItem
 from ..engine.candidates import assessment_cue_table
@@ -59,7 +61,7 @@ def assess_candidate(ctx: RunContext, *, providers: ProviderSet, store: Analysis
         except ProviderError:
             status, result = "failed", None
     record = AssessmentRecord(assessment_id=new_id("req"), analysis_id=analysis_id, candidate_id=candidate.candidate_id,
-                              purpose=purpose, model_id=model_id, run_mode=ctx.run_mode, status=status, result=result,
+                              purpose=cast(Any, purpose), model_id=model_id, run_mode=ctx.run_mode, status=status, result=result,
                               evidence_digests=[f.evidence.asset_sha256 for f in frames], provider_call_id=None,
                               created_at=utc_now())
     store.add_assessment(record)

@@ -14,7 +14,7 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from PIL import Image
 
@@ -117,7 +117,8 @@ def _resolve_target(svc: Services, ctx: RunContext, providers: ProviderSet, anal
     if target["kind"] == "box":
         return int(target["frame_index"]), list(target["xyxy_exclusive"])
     if analysis["selected_selection_id"]:
-        row = svc.db.one("SELECT * FROM selections WHERE id = ? AND analysis_id = ?", (analysis["selected_selection_id"], analysis["id"]))
+        row = svc.db.require("SELECT * FROM selections WHERE id = ? AND analysis_id = ?", (analysis["selected_selection_id"], analysis["id"]),
+                             "selection")
         return int(row["proxy_frame_index"]), [row["x0"], row["y0"], row["x1"], row["y1"]]
     frame = min(int(target.get("frame_index", 0)), video.frame_count - 1)
     png = proxy_frame_png(Path(video.path), frame, fps=video.fps, cancel=ctx.cancel)
@@ -171,9 +172,10 @@ def run_analysis(svc: Services, job: dict, cancel: CancelToken) -> str:
         return "needs_selection"
     emit("stage.started", {"stage": "tracking", "summary": "Tracking the selected object and people through the clip."})
     t0 = time.monotonic()
-    prompts = [("target", BoxPrompt(frame_index=frame, box=box)), ("person", ConceptPrompt(phrase="person"))]
+    prompts: list[tuple[Literal["target", "person"], Any]] = [("target", BoxPrompt(frame_index=frame, box=box)),
+                                                               ("person", ConceptPrompt(phrase="person"))]
 
-    def track(item: tuple[str, Any]):
+    def track(item: tuple[Literal["target", "person"], Any]):
         role, prompt = item
         key = _cache_key(clip["owner_id"], analysis["run_mode"], video, providers.tracker.model_id, role, prompt,
                          clip["preprocessing_version"] or "")
@@ -281,7 +283,7 @@ def original_cost(svc: Services, analysis: dict) -> tuple[int, str]:
 
 
 def run_question(svc: Services, job: dict, cancel: CancelToken) -> str:
-    inv = dict(svc.db.one("SELECT * FROM investigations WHERE id = ?", (job["investigation_id"],)))
+    inv = dict(svc.db.require("SELECT * FROM investigations WHERE id = ?", (job["investigation_id"],), "investigation"))
     analysis = svc.store.analysis(inv["analysis_id"])
     clip = svc.store.clip(analysis["clip_id"])
     ctx = _context(svc, job, analysis, cancel, scope="warm", investigation_id=inv["id"])

@@ -9,6 +9,7 @@ import json
 import math
 from dataclasses import dataclass
 from fractions import Fraction
+from itertools import pairwise
 from pathlib import Path
 
 from ..config import Settings
@@ -117,9 +118,9 @@ def probe_media(path: Path, *, settings: Settings, cancel: CancelToken | None = 
         raise MediaRejected("CORRUPT_MEDIA", "no decodable frames")
     if len(pts) > MAX_FRAMES:
         raise MediaRejected("DURATION_EXCEEDED", "frame count")
-    if any(b <= a for a, b in zip(pts, pts[1:])):
+    if any(b <= a for a, b in pairwise(pts)):
         raise MediaRejected("NON_FINITE_METADATA", "non-increasing timestamps")
-    deltas = {b - a for a, b in zip(pts, pts[1:])}
+    deltas = {b - a for a, b in pairwise(pts)}
     variable = len(deltas) > 1 and (max(deltas) - min(deltas)) > max(1, min(deltas) // 50)
     last_delta = min(deltas) if deltas else int(1 / (rate * time_base))
     duration_ms = int((pts[-1] - pts[0] + last_delta) * time_base * 1000)

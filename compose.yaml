@@ -1,0 +1,18 @@
+# One application process with a persistent data volume. Do not scale to multiple replicas:
+# the job queue and cost ledger are owned by a single process.
+services:
+  scenetrace:
+    build: .
+    image: scenetrace:local
+    ports:
+      - "127.0.0.1:8765:8765"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      SCENETRACE_DATA_DIR: /data
+    volumes:
+      - scenetrace-data:/data
+    restart: unless-stopped
+volumes:
+  scenetrace-data: {}

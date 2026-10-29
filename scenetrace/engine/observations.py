@@ -8,6 +8,8 @@ explicit state: observed, not_detected (stream completed, no record) or unknown.
 from __future__ import annotations
 
 from collections import defaultdict
+from itertools import pairwise
+from typing import Any, cast
 
 from ..domain import Coverage, Entity, FrameMap, Observation, ProviderBox, TrackingResult
 from .config import DEFAULT_ENGINE_CONFIG, EngineConfig
@@ -33,7 +35,7 @@ def _centre_milli(record: ProviderBox) -> tuple[int, int]:
 
 
 def _fragmented(frames: list[int], max_gap: int) -> bool:
-    return any(b - a - 1 > max_gap for a, b in zip(frames, frames[1:]))
+    return any(b - a - 1 > max_gap for a, b in pairwise(frames))
 
 
 def build_observations(*, analysis_id: str, clip_id: str, frame_map: FrameMap, results: list[TrackingResult],
@@ -90,6 +92,6 @@ def _emit(observations: list[Observation], entities: list[Entity], analysis_id: 
             mask_svg=record.mask_svg if record else None, mask_area_px=record.mask_area_px if record else None,
             provider_confidence_bp=record.confidence_bp if record else None, detection_state=state,
             identity_warning=warning))
-    entities.append(Entity(entity_id=entity_id, kind=kind, label=label, track_keys=[track_key],
+    entities.append(Entity(entity_id=entity_id, kind=cast(Any, kind), label=label, track_keys=[track_key],
                            first_t_ms=t_of[observed_frames[0]] if observed_frames else None,
                            last_t_ms=t_of[observed_frames[-1]] if observed_frames else None, identity_warning=warning))

@@ -14,6 +14,8 @@ def main(argv: list[str] | None = None) -> int:
     serve = sub.add_parser("serve", help="Run the API, worker and built client in one process")
     serve.add_argument("--host", default=None)
     serve.add_argument("--port", type=int, default=int(os.environ.get("SCENETRACE_PORT", "8765")))
+    serve.add_argument("--import-demos", type=Path, nargs="?", const=Path("demos"), default=None,
+                       help="Replay approved recorded demonstrations into the data directory before serving")
     verify = sub.add_parser("verify", help="Verify an extracted evidence bundle against a separately trusted head")
     verify.add_argument("bundle", type=Path)
     verify.add_argument("--expected-head")
@@ -32,8 +34,13 @@ def main(argv: list[str] | None = None) -> int:
     settings = Settings.load()
     if args.command == "serve":
         import uvicorn
+
         from .api.app import create_app
         host = args.host or settings.bind_host
+        if args.import_demos is not None:
+            from .demos import import_demos
+            from .jobs.context import Services
+            import_demos(Services.create(settings), args.import_demos)
         uvicorn.run(create_app(Settings.load(env={"SCENETRACE_HOST": host})), host=host, port=args.port, workers=1,
                     log_level="warning", proxy_headers=False)
         return 0

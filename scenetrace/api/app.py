@@ -8,7 +8,7 @@ import re
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastapi import Depends, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
@@ -27,7 +27,7 @@ from ..jobs.context import Services
 from ..jobs.pipeline import new_investigation
 from ..jobs.worker import Worker
 from ..media.normalise import proxy_frame_png
-from ..providers.factory import reviewer_capability, review_mode
+from ..providers.factory import review_mode, reviewer_capability
 from ..security import SESSION_COOKIE, RateLimiter, Session, Sessions, check_csrf
 from . import schemas as S
 from . import views
@@ -184,7 +184,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         s = sessions.create(body.access_code, request.client.host if request.client else "unknown")
         response.set_cookie(SESSION_COOKIE, s.id, httponly=True, samesite="strict", secure=settings.public_https, path="/",
                             max_age=12 * 3600)
-        return S.SessionOut(scope=s.scope, csrf_token=s.csrf_token, expires_at=s.expires_at,
+        return S.SessionOut(scope=cast(Any, s.scope), csrf_token=s.csrf_token, expires_at=s.expires_at,
                             live_uploads_enabled=s.is_owner and settings.live_available and settings.enable_live_uploads)
 
     @app.delete(f"{API}/session", status_code=204)
@@ -212,9 +212,9 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
             reason = "MODEL_API_KEY missing" if not settings.live_available else "Live uploads are disabled on this server"
         d = settings.defaults
         return S.CapabilitiesOut(
-            project_owner="Isaac Oselukwue", default_run_mode=settings.default_mode, available_run_modes=modes,
-            live_available="live" in modes, live_block_reason=reason, review_mode=review_mode(settings),
-            models=[S.ModelCapabilityOut(role=r, model_id=settings.models[r], status=status_of[r],
+            project_owner="Isaac Oselukwue", default_run_mode=settings.default_mode, available_run_modes=cast(Any, modes),
+            live_available="live" in modes, live_block_reason=reason, review_mode=cast(Any, review_mode(settings)),
+            models=[S.ModelCapabilityOut(role=r, model_id=settings.models[r], status=cast(Any, status_of[r]),
                                          checked_at=report.get("checked_at")) for r in ("tracking", "investigator", "reviewer")],
             limits=S.LimitsOut(max_upload_bytes=d["max_upload_bytes"], max_clip_duration_ms=d["max_clip_duration_ms"],
                                max_supported_people=d["max_supported_people"], analysis_cap_microusd=d["analysis_cap_microusd"],
@@ -421,7 +421,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                          " recorded_from, recorded_at, created_at) VALUES (?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?)",
                          (analysis_id, s.owner_id, clip_id, body.mode, dumps(target), dumps([z.model_dump() for z in body.zones]),
                           dumps(models), recorded_from,
-                          svc.db.one("SELECT completed_at FROM analyses WHERE id = ?", (recorded_from,))["completed_at"] if recorded_from else None,
+                          svc.db.require("SELECT completed_at FROM analyses WHERE id = ?", (recorded_from,))["completed_at"] if recorded_from else None,
                           utc_now()))
         job_id, _ = enqueue(owner_id=s.owner_id, kind="analysis", key=body.idempotency_key, payload=payload, run_mode=body.mode,
                             analysis_id=analysis_id, clip_id=clip_id)
@@ -553,7 +553,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                     if batch[-1]["type"] in ("job.completed", "job.partial", "job.failed", "job.cancelled", "job.needs_selection"):
                         return
                     continue
-                state = await asyncio.to_thread(lambda: svc.db.one("SELECT state FROM jobs WHERE id = ?", (job_id,))["state"])
+                state = await asyncio.to_thread(lambda: svc.db.require("SELECT state FROM jobs WHERE id = ?", (job_id,), "job")["state"])
                 if state in ("completed", "partial", "failed", "cancelled", "interrupted", "needs_selection"):
                     return  # nothing newer to send for a finished job
                 await asyncio.sleep(0.25)

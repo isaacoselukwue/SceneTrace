@@ -65,4 +65,4 @@ def delete_clip(svc: Services, clip: dict, *, status: str = "deleted") -> None:
 
 
 def expiry_for(hours: int) -> str:
-    return (dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=hours)).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return (dt.datetime.now(dt.UTC) + dt.timedelta(hours=hours)).isoformat(timespec="seconds").replace("+00:00", "Z")

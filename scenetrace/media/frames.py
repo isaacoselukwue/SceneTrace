@@ -28,7 +28,7 @@ def extract_source_frames(source: Path, frame_map: FrameMap, proxy_frame_indices
         shutil.rmtree(staging, ignore_errors=True)
         raise MediaToolError("FRAME_EXTRACT_FAILED", result.stderr[-300:])
     by_source: dict[int, Path] = {}
-    for index, path in zip(sources, produced):
+    for index, path in zip(sources, produced, strict=True):
         target = out_dir / f"source_{index:06d}.png"
         path.replace(target)
         by_source[index] = target

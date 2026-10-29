@@ -14,7 +14,6 @@ import argparse
 import asyncio
 import base64
 import datetime as dt
-import hashlib
 import json
 import os
 import re
@@ -176,7 +175,7 @@ def main() -> None:
     fixtures = ROOT / "tests" / "fixtures" / "provider"
     fixtures.mkdir(parents=True, exist_ok=True)
     spike = Spike(key, args.out)
-    started_at = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    started_at = dt.datetime.now(dt.UTC).isoformat(timespec="seconds")
     spike.check_models()
     if spike.checks["auth_and_model_listing"]["status"] != "passed":
         write_report(spike, started_at, args.out)

@@ -14,8 +14,8 @@ def new_id(prefix: str) -> str:
 
 
 def utc_now() -> str:
-    return dt.datetime.now(dt.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return dt.datetime.now(dt.UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def utc_day() -> str:
-    return dt.datetime.now(dt.timezone.utc).date().isoformat()
+    return dt.datetime.now(dt.UTC).date().isoformat()

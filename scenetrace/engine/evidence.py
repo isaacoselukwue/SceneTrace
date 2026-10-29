@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import Any, cast
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -101,7 +102,7 @@ def collect_evidence(*, analysis_id: str, owner_id: str, clip_id: str, candidate
                                            kind="evidence_frame", media_type="image/png", derived=False)
         items.append(EvidenceItem(
             evidence=Evidence(evidence_id=raw_id, source_sha256=source_sha256, asset_path=f"evidence/{raw_path.name}",
-                              asset_sha256=sha256_file(raw_path), t_ms=entry.t_ms, role=role, derived=False),
+                              asset_sha256=sha256_file(raw_path), t_ms=entry.t_ms, role=cast(Any, role), derived=False),
             asset_id=raw_asset, candidate_id=candidate.candidate_id, kind="frame", proxy_frame_index=frame,
             source_frame_index=entry.source_frame_index, source_pts_ms=entry.source_pts_ms, width=width, height=height))
         number += 1
@@ -113,7 +114,7 @@ def collect_evidence(*, analysis_id: str, owner_id: str, clip_id: str, candidate
         items.append(EvidenceItem(
             evidence=Evidence(evidence_id=f"V{number}", source_sha256=source_sha256,
                               asset_path=f"evidence/{annotated_path.name}", asset_sha256=sha256_file(annotated_path),
-                              t_ms=entry.t_ms, role=role, derived=True),
+                              t_ms=entry.t_ms, role=cast(Any, role), derived=True),
             asset_id=annotated_asset, candidate_id=candidate.candidate_id, kind="annotated", proxy_frame_index=frame,
             source_frame_index=entry.source_frame_index, source_pts_ms=entry.source_pts_ms, width=width, height=height))
         number += 1

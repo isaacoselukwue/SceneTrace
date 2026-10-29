@@ -69,6 +69,14 @@ class Database:
     def one(self, sql: str, params: tuple[Any, ...] | dict[str, Any] = ()) -> sqlite3.Row | None:
         return self.conn().execute(sql, params).fetchone()
 
+    def require(self, sql: str, params: tuple[Any, ...] | dict[str, Any] = (), what: str = "record") -> sqlite3.Row:
+        """Like one(), but a missing row is a clean not-found error rather than a crash."""
+        row = self.one(sql, params)
+        if row is None:
+            from .errors import not_found
+            raise not_found(what)
+        return row
+
     def migrate(self) -> None:
         conn = self._connect()
         try:

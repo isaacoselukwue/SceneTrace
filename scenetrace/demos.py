@@ -44,15 +44,20 @@ def publish_demo(svc: Services, analysis_id: str, *, title: str, description: st
     shutil.copyfile(svc.storage.proxy_dir(owner, clip["id"]) / "proxy.mp4", target / "proxy.mp4")
     shutil.copyfile(svc.storage.proxy_dir(owner, clip["id"]) / "frame_map.json", target / "frame_map.json")
     shutil.copytree(svc.storage.analysis_dir(owner, clip["id"], analysis_id) / "recording", target / "recording")
-    questions = [r["question"] for r in svc.db.query(
-        "SELECT question FROM investigations WHERE analysis_id = ? AND status IN ('completed', 'partial') ORDER BY created_at",
-        (analysis_id,))]
+    rows = svc.db.query("SELECT id, question, timings_json FROM investigations WHERE analysis_id = ?"
+                        " AND status IN ('completed', 'partial') ORDER BY created_at", (analysis_id,))
+    questions = [r["question"] for r in rows]
+    from .jobs.pipeline import _call_total
+    original = {"cold_timings_ms": loads(analysis["timings_json"], {}),
+                "cold_cost_microusd": _call_total(svc.ledger.calls_for(analysis_id=analysis_id))[0],
+                "questions": [{"question": r["question"], "question_ms": loads(r["timings_json"], {}).get("question_ms"),
+                               "cost_microusd": _call_total(svc.ledger.calls_for(investigation_id=r["id"]))[0]} for r in rows]}
     manifest = {
         "schema_version": 1, "title": title, "description": description, "approved_by": approved_by,
         "approval_note": approval_note, "display_name": clip["display_name"], "media_kind": clip["media_kind"],
         "source_sha256": clip["source_sha256"], "proxy_sha256": clip["proxy_sha256"], "recorded_at": analysis["completed_at"],
         "models": loads(analysis["models_json"], {}), "target": loads(analysis["target_json"], {}),
-        "zones": loads(analysis["zones_json"], []), "questions": questions,
+        "zones": loads(analysis["zones_json"], []), "questions": questions, "original_run": original,
         "clip": {k: clip[k] for k in ("source_bytes", "source_container", "source_codec", "source_width", "source_height",
                                       "rotation_deg", "source_fps_num", "source_fps_den", "duration_ms", "proxy_width",
                                       "proxy_height", "proxy_fps", "proxy_frame_count", "frame_map_sha256",
@@ -126,7 +131,7 @@ def _job(svc: Services, kind: str, **links: str) -> dict:
                      " started_at) VALUES (?, ?, ?, ?, ?, ?, 'running', 'recorded_real', ?, ?)",
                      (job_id, PUBLIC, kind, links.get("clip_id"), links.get("analysis_id"), links.get("investigation_id"),
                       utc_now(), utc_now()))
-    return dict(svc.db.one("SELECT * FROM jobs WHERE id = ?", (job_id,)))
+    return dict(svc.db.require("SELECT * FROM jobs WHERE id = ?", (job_id,), "job"))
 
 
 def _close(svc: Services, job: dict, state: str) -> None:

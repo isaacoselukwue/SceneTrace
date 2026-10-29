@@ -1,7 +1,7 @@
 """Assemble API DTOs from stored records. URLs are server routes by ID, never filesystem paths."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from ..db import loads
 from ..engine.promotion import STATUS_MEANING
@@ -35,7 +35,7 @@ def usage_out(rows: list[dict], revision: str | None) -> S.UsageOut:
                                state=r["state"], cost_status=r["cost_status"], reserved_microusd=r["reserved_microusd"],
                                actual_microusd=r["actual_microusd"], elapsed_ms=r["elapsed_ms"], request_id=r["request_id"],
                                error_code=r["error_code"], created_at=r["created_at"]) for r in rows]
-    return S.UsageOut(total_microusd=total, cost_status=status, provider_calls=sum(1 for r in rows if r["cost_status"] != "free"),
+    return S.UsageOut(total_microusd=total, cost_status=cast(Any, status), provider_calls=sum(1 for r in rows if r["cost_status"] != "free"),
                       unknown_cost_calls=sum(1 for r in rows if r["cost_status"] == "unknown"), calls=calls,
                       rate_card_revision=revision)
 

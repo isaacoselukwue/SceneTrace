@@ -9,7 +9,7 @@ unknown and scope messages.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from pydantic import ValidationError
 
@@ -88,7 +88,7 @@ def fallback_draft(plan: Plan, events: dict[str, EventRevision], allowed: set[st
         "BUDGET_EXHAUSTED": True,
     }
     codes = [c for c in order if c in allowed and needed[c]]
-    return AnswerDraft(claims=claims, unknown_codes=codes)
+    return AnswerDraft(claims=claims, unknown_codes=cast(Any, codes))
 
 
 def scope_sentences(plan: Plan, store: AnalysisStore, analysis_id: str, events: dict[str, EventRevision]) -> list[str]:

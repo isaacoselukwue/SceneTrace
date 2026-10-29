@@ -427,6 +427,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
+    { name = "jsonschema" },
     { name = "meta-sam-parser" },
     { name = "numpy" },
     { name = "pillow" },
@@ -437,7 +438,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "jsonschema" },
     { name = "pyrefly" },
     { name = "pytest" },
     { name = "ruff" },
@@ -447,6 +447,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = "==0.162.0" },
     { name = "httpx", specifier = "==0.28.1" },
+    { name = "jsonschema", specifier = "==4.26.0" },
     { name = "meta-sam-parser", specifier = "==0.1.0" },
     { name = "numpy", specifier = "==2.5.4" },
     { name = "pillow", specifier = "==13.0.0" },
@@ -457,7 +458,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "jsonschema", specifier = "==4.26.0" },
     { name = "pyrefly", specifier = "==1.4.0" },
     { name = "pytest", specifier = "==9.2.0" },
     { name = "ruff", specifier = "==0.17.3" },

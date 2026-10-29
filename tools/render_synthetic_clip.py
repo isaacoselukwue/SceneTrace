@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
+from itertools import pairwise
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter
@@ -52,7 +53,7 @@ class Person:
     def x_at(self, t: float) -> float | None:
         if not self.keyframes or t < self.keyframes[0][0] or t > self.keyframes[-1][0]:
             return None
-        for (t0, x0), (t1, x1) in zip(self.keyframes, self.keyframes[1:]):
+        for (t0, x0), (t1, x1) in pairwise(self.keyframes):
             if t0 <= t <= t1:
                 return lerp(x0, x1, (t - t0) / (t1 - t0)) if t1 > t0 else x1
         return self.keyframes[-1][1]
@@ -227,7 +228,6 @@ def render(scenario: Scenario, out_dir: Path) -> Path:
     if ffmpeg is None:
         raise SystemExit("ffmpeg is required")
     frames = int(round(scenario.duration_s * FPS))
-    people = {p.name: p for p in scenario.people}
     with tempfile.TemporaryDirectory(prefix="scenetrace-render-") as tmp:
         tmp_path = Path(tmp)
         for i in range(frames):
@@ -246,7 +246,7 @@ def render(scenario: Scenario, out_dir: Path) -> Path:
             hands: dict[str, tuple[float, float] | None] = {}
             for p in scenario.people:
                 hands[p.name] = draw_person(d, SCALE, p, t)
-            for b, holder in held:
+            for _bottle, holder in held:
                 hand = hands.get(holder)
                 if hand is not None:
                     draw_bottle(d, SCALE, hand[0], hand[1] + 14.0)
@@ -268,6 +268,8 @@ def render(scenario: Scenario, out_dir: Path) -> Path:
         "duration_ms": int(scenario.duration_s * 1000),
         "renderer": "tools/render_synthetic_clip.py",
         "events": scenario.labels,
+        "actors": [{"actor": p.name, "present_ms": [int(p.keyframes[0][0] * 1000), int(p.keyframes[-1][0] * 1000)]}
+                   for p in scenario.people],
         "questions": scenario.questions,
         "note": "Ground truth describes what the renderer drew. Synthetic results are smoke tests, not vision benchmark evidence.",
     }

@@ -35,5 +35,21 @@
       "observable": true
     }
   ],
-  "note": "Ground truth describes what the renderer drew. Synthetic results are smoke tests, not vision benchmark evidence."
+  "note": "Ground truth describes what the renderer drew. Synthetic results are smoke tests, not vision benchmark evidence.",
+  "actors": [
+    {
+      "actor": "passer",
+      "present_ms": [
+        3000,
+        9000
+      ]
+    },
+    {
+      "actor": "picker",
+      "present_ms": [
+        10500,
+        18400
+      ]
+    }
+  ]
 }

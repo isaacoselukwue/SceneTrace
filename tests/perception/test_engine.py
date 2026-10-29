@@ -207,6 +207,7 @@ def test_real_truncated_stream_is_unknown_not_absent(db, settings: Settings) -> 
 
 def test_real_selection_on_image(db, settings: Settings) -> None:
     from scenetrace.providers.meta_sam import MetaSamTracker
+
     from .support import FakeSamTransport, make_ctx
     tracker = MetaSamTracker(transport=FakeSamTransport(), settings=settings, db=db)
     found = tracker.select_instances(make_ctx(db, settings), image_png=b"\x89PNG", width=960, height=540, phrase="bottle",
@@ -235,7 +236,7 @@ def test_real_evidence_extraction_from_sample_clip(db, settings: Settings, tmp_p
     assert len(raw) == len(annotated) == 6
     assert [i.evidence.role for i in raw] == ["before", "before", "during", "during", "after", "after"]
     assert all((i.width, i.height) == (960, 540) for i in raw)
-    assert all(r.evidence.asset_sha256 != a.evidence.asset_sha256 for r, a in zip(raw, annotated))
+    assert all(r.evidence.asset_sha256 != a.evidence.asset_sha256 for r, a in zip(raw, annotated, strict=True))
     for item in raw:
         path, media = storage.asset_path(item.asset_id, "owner_local", verify_digest=True)
         assert media == "image/png" and path.name == item.evidence.asset_path.split("/")[-1]

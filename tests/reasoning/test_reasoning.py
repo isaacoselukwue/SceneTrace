@@ -9,13 +9,27 @@ from PIL import Image
 
 from scenetrace.budget import DurableLedger
 from scenetrace.config import Settings
-from scenetrace.domain import AnswerDraft, AuditFinding, AuditResult, Candidate, Claim, EventRecord, Evidence, EvidenceItem
+from scenetrace.domain import (
+    AnswerDraft,
+    AuditFinding,
+    AuditResult,
+    Candidate,
+    Claim,
+    EventRecord,
+    Evidence,
+    EvidenceItem,
+)
 from scenetrace.errors import BudgetExceeded
 from scenetrace.investigator.compiler import allowed_unknown_codes, compile_draft
 from scenetrace.investigator.controller import run_investigation
 from scenetrace.investigator.tools import ToolContext, run_tool
 from scenetrace.providers.base import FunctionCall, ModelTurn, ProviderError, ProviderSet, RunContext
-from scenetrace.providers.fixture_reasoning import FixtureAssessor, FixtureInvestigatorModel, FixtureReviewer, keyword_plan
+from scenetrace.providers.fixture_reasoning import (
+    FixtureAssessor,
+    FixtureInvestigatorModel,
+    FixtureReviewer,
+    keyword_plan,
+)
 from scenetrace.providers.fixture_tracking import FixtureTracker
 from scenetrace.storage import Storage
 from scenetrace.store import AnalysisStore

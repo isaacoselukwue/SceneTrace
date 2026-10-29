@@ -26,6 +26,29 @@
     "reviewer": "muse-wonder-1.0",
     "tracking": "sam-3.1"
   },
+  "original_run": {
+    "cold_cost_microusd": 76935,
+    "cold_timings_ms": {
+      "assessment_ms": 7067,
+      "normalise_ms": 603,
+      "total_ms": 25430,
+      "tracking_ms": 15442,
+      "tracking_reused_requests": 0,
+      "upload_ms": 0
+    },
+    "questions": [
+      {
+        "cost_microusd": 50801,
+        "question": "Who took the bottle?",
+        "question_ms": 31563
+      },
+      {
+        "cost_microusd": 30069,
+        "question": "Where was the bottle last seen?",
+        "question_ms": 18532
+      }
+    ]
+  },
   "proxy_sha256": "352b5873976314c1304c4805c0a97fa0dc456b0331a20456dd4cd1f1c2d434b6",
   "questions": [
     "Who took the bottle?",

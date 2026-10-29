@@ -255,6 +255,7 @@ def test_access_code_sessions(tmp_path: Path) -> None:
 
 def test_replay_transport_never_touches_the_network(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import httpx
+
     from scenetrace.providers.base import RecordingMiss
     from scenetrace.providers.recording import Recording, RecordingTransport, ReplayTransport
     from scenetrace.providers.transport import HTTPResult

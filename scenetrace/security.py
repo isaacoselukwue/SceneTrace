@@ -75,7 +75,7 @@ class Sessions:
 
     def _insert(self, owner_id: str, scope: str) -> Session:
         session = Session(id=new_id("sess"), owner_id=owner_id, scope=scope, csrf_token=secrets.token_urlsafe(32),
-                          expires_at=(dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=SESSION_HOURS))
+                          expires_at=(dt.datetime.now(dt.UTC) + dt.timedelta(hours=SESSION_HOURS))
                           .isoformat(timespec="seconds").replace("+00:00", "Z"))
         with self.db.write() as conn:
             conn.execute("INSERT INTO sessions(id, owner_id, csrf_token, scope, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)",
