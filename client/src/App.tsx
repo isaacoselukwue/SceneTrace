@@ -48,7 +48,7 @@ export function App() {
         </nav>
       </header>
       {!ready ? <main id="main"><p className="muted">Loading…</p></main>
-        : analysis ? <AnalysisPage analysisId={analysis[1]} session={session} />
+        : analysis ? <AnalysisPage key={analysis[1]} analysisId={analysis[1]} session={session} />
         : clip && capabilities ? <ClipPage clipId={clip[1]} capabilities={capabilities} navigate={navigate} />
           : <Home session={session} capabilities={capabilities} onSession={setSession} navigate={navigate} />}
       <footer className="site-foot">

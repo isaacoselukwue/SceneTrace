@@ -73,3 +73,14 @@ test("overlay toggle and seeking across the occlusion", async ({ page }) => {
   await page.getByLabel("Show overlays").uncheck();
   await expect(page.locator("svg.overlay")).toHaveCount(0);
 });
+
+test("switching between analyses never shows another clip's tracks", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open recorded run" }).first().click();
+  await page.locator("video").evaluate((v: HTMLVideoElement) => { v.currentTime = 9.0; });
+  await expect(page.locator(".video-status")).toContainText("O1 observed", { timeout: 15_000 });
+  await page.getByRole("button", { name: /SceneTrace/ }).click();
+  await page.getByRole("button", { name: "Open recorded run" }).last().click();
+  await page.locator("video").evaluate((v: HTMLVideoElement) => { v.currentTime = 9.0; });
+  await expect(page.locator(".video-status")).toContainText("not detected", { timeout: 15_000 });
+});
