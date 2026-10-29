@@ -105,6 +105,12 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
               viewBox={`0 0 ${width} ${height}`}
               aria-hidden="true"
             >
+              {analysis.zones.map((z) => z.polygon && (
+                <g key={z.entity_id}>
+                  <polygon points={z.polygon.map((p) => p.join(",")).join(" ")} className="zone-overlay" />
+                  <text x={z.polygon[0][0] + 4} y={z.polygon[0][1] + 16} className="zone-label">{z.entity_id} {z.label}</text>
+                </g>
+              ))}
               {current
                 .filter((o) => o.detection_state === "observed" && o.box)
                 .map((o) => {
@@ -130,6 +136,7 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
           <span className="legend">
             <span className="swatch swatch-o" aria-hidden="true" /> O1 mask and box
             <span className="swatch swatch-p" aria-hidden="true" /> P tracks (boxes, not masks)
+            {analysis.zones.length > 0 && <><span className="swatch swatch-z" aria-hidden="true" /> drawn zones</>}
           </span>
           <span className="video-status" aria-live="off">{status}</span>
         </div>

@@ -201,6 +201,11 @@ def run_analysis(svc: Services, job: dict, cancel: CancelToken) -> str:
     label = target.get("phrase") or target.get("label") or "selected object"
     entities = [e.model_copy(update={"label": label}) if e.entity_id == "O1" else e for e in entities]
     svc.store.save_observations(analysis["id"], observations, entities, coverage)
+    people = sum(1 for e in entities if e.kind == "person")
+    if people > svc.settings.limit("max_supported_people"):
+        reasons.append("TOO_MANY_PEOPLE")
+        emit("stage.progress", {"stage": "tracking", "summary": f"{people} person tracks exceed the supported limit of"
+                                f" {svc.settings.limit('max_supported_people')}; treat the results with caution."})
     zones = [Zone(zone_id=f"Z{i}", label=z["label"], polygon=[tuple(p) for p in z["polygon"]])
              for i, z in enumerate(loads(analysis["zones_json"], []), start=1)]
     svc.store.save_zones(analysis["id"], zones)

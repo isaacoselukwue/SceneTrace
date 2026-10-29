@@ -118,6 +118,7 @@ main { max-width: 1440px; margin: 0 auto; padding: calc(var(--space) * 3); }
 .swatch { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
 .swatch-o { background: var(--object); }
 .swatch-p { border: 2px dashed var(--person); }
+.swatch-z { border: 2px dashed #6366f1; background: rgb(99 102 241 / 0.2); }
 .video-status { color: var(--muted); }
 
 .event-list { list-style: none; padding: 0; margin: 0; }
@@ -165,7 +166,13 @@ details summary { cursor: pointer; color: var(--accent); min-height: 32px; }
 
 .selector-frame { position: relative; background: #0b1220; border-radius: var(--radius); aspect-ratio: 16 / 9; overflow: hidden; touch-action: none; }
 .selector-frame img { width: 100%; height: 100%; object-fit: contain; user-select: none; }
-.drawn-box { position: absolute; border: 2px solid #22d3ee; box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.25); pointer-events: none; }
+.selector-overlay { position: absolute; pointer-events: none; }
+.box-shape { fill: rgb(34 211 238 / 0.12); stroke: #22d3ee; stroke-width: 2; }
+.zone-shape { fill: rgb(99 102 241 / 0.25); stroke: #6366f1; stroke-width: 2; stroke-dasharray: 6 4; }
+.zone-point { fill: #6366f1; }
+.selector-frame.tool-box, .selector-frame.tool-zone { cursor: crosshair; }
+.overlay .zone-overlay { fill: rgb(99 102 241 / 0.18); stroke: #6366f1; stroke-width: 2; stroke-dasharray: 6 4; }
+.overlay .zone-label { fill: #312e81; font: 600 13px var(--font); }
 .scrub { display: grid; gap: 4px; margin: var(--space) 0; }
 .scrub input { width: 100%; }
 .selections { display: flex; gap: var(--space); flex-wrap: wrap; }

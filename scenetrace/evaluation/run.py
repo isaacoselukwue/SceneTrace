@@ -104,38 +104,90 @@ def score_clip(svc: Services, label: dict) -> dict:
             "actor": actor_scores(pairs, association), "actor_association": association, "questions": questions}
 
 
-def score_questions(svc: Services, analysis_id: str, label: dict, association: dict[str, str]) -> dict:
-    asked = {r["question"]: dict(r) for r in svc.db.query("SELECT * FROM investigations WHERE analysis_id = ?", (analysis_id,))}
+def score_questions(svc: Services, analysis_id: str, label: dict, association: dict[str, str],
+                    answers: dict[str, list[dict]] | None = None) -> dict:
+    """One rubric for every arm. answers maps question text to claim dicts; by default the stored investigations."""
+    if answers is None:
+        answers = {r["question"]: (loads(r["result_json"], {}) or {}).get("claims", [])
+                   for r in svc.db.query("SELECT * FROM investigations WHERE analysis_id = ? AND result_json IS NOT NULL",
+                                         (analysis_id,))}
+    truth = [e for e in label["events"] if e["event_type"] in ACTIONS and e.get("observable", True)]
     rows = []
     for q in label.get("questions", []):
-        inv = asked.get(q["question"])
-        if inv is None:
+        if q["question"] not in answers:
             rows.append({"question": q["question"], "asked": False})
             continue
-        result = loads(inv["result_json"], {}) or {}
-        claims = result.get("claims", [])
+        claims = answers[q["question"]]
         actions = [c for c in claims if c["predicate"] in ACTIONS and c["certainty"] == "supported"]
         abstained = not claims or (q["intent"] == "actor" and not any(c.get("actor_id") for c in actions))
-        truth = [e for e in label["events"] if e["event_type"] in ACTIONS and e.get("observable", True)]
         if q["intent"] == "actor":
             named = {association.get(c["actor_id"]) for c in actions if c.get("actor_id")}
             correct = bool(truth) and named == {e["actor"] for e in truth} and not abstained
         elif q["intent"] == "interaction_window":
-            correct = not actions and not truth if "between 00:04 and 00:08" in q["question"] else bool(actions)
+            from ..providers.fixture_reasoning import keyword_plan
+            plan = keyword_plan(q["question"], "O1")
+            t0, t1 = plan.t_start_ms or 0, plan.t_end_ms or 10**9
+            inside = [e for e in truth if e["t_end_ms"] >= t0 and e["t_start_ms"] <= t1]
+            claimed = [c for c in actions if c["t_end_ms"] >= t0 and c["t_start_ms"] <= t1]
+            correct = (not inside and not claimed) or (bool(inside) and len(match(
+                [Interval(c["claim_id"], c["predicate"], c["t_start_ms"], c["t_end_ms"]) for c in claimed],
+                [Interval(f"L{i}", e["event_type"], e["t_start_ms"], e["t_end_ms"]) for i, e in enumerate(inside)])) == len(inside))
             abstained = False
+        elif q["intent"] == "last_seen":
+            correct = any(c["predicate"] == "last_seen" for c in claims)
         else:
             correct = bool(truth) and len(match([Interval(c["claim_id"], c["predicate"], c["t_start_ms"], c["t_end_ms"])
                                                  for c in actions], [Interval(f"L{i}", e["event_type"], e["t_start_ms"],
                                                                               e["t_end_ms"]) for i, e in enumerate(truth)])) == len(truth)
-        asserted_wrong = sum(1 for c in actions if association.get(c.get("actor_id") or "", "") not in
-                             {e.get("actor") for e in truth} and c.get("actor_id"))
-        rows.append({"question": q["question"], "asked": True, "observable": q["observable"], "answered_correctly": correct and q["observable"],
-                     "abstained": abstained, "wrong_assertions": asserted_wrong, "sentences": [s["text"] for s in result.get("sentences", [])]})
+        wrong = sum(1 for c in actions if c.get("actor_id") and association.get(c["actor_id"]) not in {e.get("actor") for e in truth})
+        rows.append({"question": q["question"], "asked": True, "observable": q["observable"],
+                     "answered_correctly": bool(correct and q["observable"]), "abstained": abstained, "wrong_assertions": wrong})
     observable = [r for r in rows if r.get("asked") and r["observable"]]
     unobservable = [r for r in rows if r.get("asked") and not r["observable"]]
     return {"rows": rows, "observable_asked": len(observable), "useful_answers": sum(1 for r in observable if r["answered_correctly"]),
             "abstentions": sum(1 for r in rows if r.get("abstained")), "unobservable_asked": len(unobservable),
-            "correct_abstentions": sum(1 for r in unobservable if r["abstained"])}
+            "correct_abstentions": sum(1 for r in unobservable if r["abstained"]),
+            "wrong_assertions": sum(r.get("wrong_assertions", 0) for r in rows)}
+
+
+def without_reviewer(labels: dict[str, dict]) -> dict:
+    """Arm D: replay each demo's recorded investigator turns, in their recorded order, on a fresh import with the
+    secondary reviewer removed. Initial events are identical to arm C."""
+    from ..demos import import_demos
+    from ..investigator.controller import run_investigation
+    from ..jobs.pipeline import _recording_dir
+    from ..providers.factory import build_providers
+    out: dict[str, Any] = {}
+    with tempfile.TemporaryDirectory(prefix="scenetrace-arm-d-") as tmp:
+        svc = Services.create(Settings.load(ROOT, env={"SCENETRACE_DATA_DIR": tmp, "MODEL_API_KEY": ""}))
+        import_demos(svc, ROOT / "demos", replay_questions=False)
+        settings = dataclasses.replace(svc.settings, enable_secondary_review=False)
+        for name, label in sorted(labels.items()):
+            analysis = _analysis_for(svc, label["source_sha256"])
+            if analysis is None:
+                out[name] = {"completed": False}
+                continue
+            clip = svc.store.clip(analysis["clip_id"])
+            package = next(p for p in (ROOT / "demos").iterdir() if (p / "demo.json").is_file()
+                           and json.loads((p / "demo.json").read_text())["source_sha256"] == label["source_sha256"])
+            recorded_order = json.loads((package / "demo.json").read_text())["questions"]
+            providers = dataclasses.replace(build_providers(settings, svc.db, "recorded_real",
+                                                            recording_dir=_recording_dir(svc, analysis, clip)),
+                                            reviewer=None, review_mode="not_run")
+            answers: dict[str, list[dict]] = {}
+            sentences: dict[str, list[str]] = {}
+            for question in recorded_order:
+                ctx = RunContext(owner_id=analysis["owner_id"], scope="eval", run_mode="recorded_real", ledger=svc.ledger,
+                                 analysis_id=analysis["id"], investigation_id=new_id("inv"))
+                outcome = run_investigation(ctx, providers=providers, store=svc.store, storage=svc.storage, settings=settings,
+                                            analysis_id=analysis["id"], owner_id=analysis["owner_id"], question=question,
+                                            object_id="O1")
+                answers[question] = [c.model_dump() for c in outcome.claims]
+                sentences[question] = [s["text"] for s in outcome.sentences]
+            association = associate(svc, analysis["id"], label.get("actors", []))
+            out[name] = {"completed": True, "sentences": sentences,
+                         "questions": score_questions(svc, analysis["id"], label, association, answers)}
+    return out
 
 
 def pool(clips: list[dict]) -> dict:
@@ -196,6 +248,8 @@ def fault_injection(svc: Services, live_review: bool) -> dict:
     reviewer = {"status": "not_run", "note": "Run with --live-review to send every case to the live secondary reviewer."}
     if live_review:
         reviewer = review_cases(svc, results, sources)
+    else:
+        reviewer = carried_review(results) or reviewer
     planted = [r for r in results if r["category"] != "clean"]
     controls = [r for r in results if r["category"] == "clean"]
     by_category = {c: {"planted": sum(1 for r in planted if r["category"] == c),
@@ -205,11 +259,30 @@ def fault_injection(svc: Services, live_review: bool) -> dict:
                "validator": {"caught": sum(1 for r in planted if r["validator_blocked"]),
                              "false_rejects": sum(1 for r in controls if r["validator_blocked"])},
                "by_category": by_category, "reviewer": reviewer}
-    if live_review and reviewer.get("status") == "measured":
+    if reviewer.get("status") == "measured":
         summary["combined"] = {"caught": sum(1 for r in planted if r["validator_blocked"] or r.get("reviewer_blocked")),
                                "false_rejects": sum(1 for r in controls if r["validator_blocked"] or r.get("reviewer_blocked"))}
     return {"summary": summary, "cases": results,
             "note": "Mutations of claims about two recorded live runs of synthetic clips: not 30 independent scenes."}
+
+
+def carried_review(results: list[dict]) -> dict | None:
+    """Reuse an earlier live review only if every case's claim is identical; label where it came from."""
+    path = REPORTS / "fault-injection.json"
+    try:
+        previous = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    reviewer = previous.get("summary", {}).get("reviewer", {})
+    if reviewer.get("status") != "measured":
+        return None
+    old_cases = {c["case_id"]: c for c in previous.get("cases", [])}
+    if set(old_cases) != {r["case_id"] for r in results} or any(old_cases[r["case_id"]]["claim"] != r["claim"] for r in results):
+        return None
+    for row in results:
+        row["reviewer_verdict"] = old_cases[row["case_id"]].get("reviewer_verdict")
+        row["reviewer_blocked"] = old_cases[row["case_id"]].get("reviewer_blocked")
+    return {**reviewer, "carried_over_from": reviewer.get("carried_over_from") or previous.get("generated_at") or "earlier run"}
 
 
 def review_cases(svc: Services, results: list[dict], sources: dict[str, str]) -> dict:
@@ -245,6 +318,77 @@ def review_cases(svc: Services, results: list[dict], sources: dict[str, str]) ->
             "note": "needs_evidence counts as blocked, as in production. Reviewer-only figures deliberately bypass the validator."}
 
 
+VIDEO_TOKENS_PER_SECOND = 600
+BASELINE_SCHEMA = {
+    "type": "object", "additionalProperties": False, "required": ["events"],
+    "properties": {"events": {"type": "array", "items": {
+        "type": "object", "additionalProperties": False, "required": ["event_type", "t_start_ms", "t_end_ms", "certainty"],
+        "properties": {"event_type": {"type": "string", "enum": ["pick_up", "put_down", "place_in_zone"]},
+                       "t_start_ms": {"type": "integer", "minimum": 0}, "t_end_ms": {"type": "integer", "minimum": 0},
+                       "certainty": {"type": "string", "enum": ["visible", "possible"]}}}}},
+}
+
+
+def native_video_baseline(svc: Services, label: dict) -> dict:
+    """Arm A: Muse Spark watches the whole proxy video with the same object reference and no SceneTrace events."""
+    from ..providers.base import CallOutcome
+    from ..providers.recording import dispatch_call
+    from ..providers.transport import MetaTransport, output_text
+    analysis = _analysis_for(svc, label["source_sha256"])
+    if analysis is None:
+        return {"completed": False}
+    clip = svc.store.clip(analysis["clip_id"])
+    target = loads(analysis["target_json"], {})
+    selection = svc.db.one("SELECT * FROM selections WHERE analysis_id = ? LIMIT 1", (analysis["id"],))
+    reference = (f"the {target.get('phrase') or 'object'} inside the box x {selection['x0']}-{selection['x1']}, y {selection['y0']}-{selection['y1']}"
+                 f" of the first frame ({clip['proxy_width']}x{clip['proxy_height']} pixels)") if selection else f"the {target.get('phrase')}"
+    model = svc.settings.models["investigator"]
+    transport = MetaTransport(svc.settings.provider_base_url, svc.settings.model_api_key)
+    ctx = RunContext(owner_id="public", scope="eval", run_mode="live", ledger=svc.ledger, analysis_id=analysis["id"], job_id=new_id("job"))
+    proxy = svc.storage.proxy_dir(clip["owner_id"], clip["id"]) / "proxy.mp4"
+    upload = transport.upload_file(proxy, media_type="video/mp4", expires_after_s=3600)
+    file_id = upload.json["id"]
+    prompt = (f"The selected object is {reference}. The video runs at {clip['proxy_fps']} frames per second and lasts"
+              f" {clip['duration_ms']} ms. List every pick_up, put_down or place_in_zone of this object with start and end"
+              " times in milliseconds from the start of the video. Use certainty visible only when you can see the action"
+              " itself; use possible when it is hidden or unclear. Do not describe or identify people.")
+    from ..providers.schemas import text_format
+    body = {"model": model, "store": False, "max_output_tokens": 4000, "reasoning": {"effort": "low"},
+            "input": [{"type": "message", "role": "user", "content": [{"type": "input_text", "text": prompt},
+                                                                       {"type": "input_video", "file_id": file_id}]}],
+            "text": {"format": text_format("video_events", BASELINE_SCHEMA)}}
+    try:
+        counted = transport.count_input_tokens(body).json["input_tokens"]
+        # The count endpoint omits video tokens (measured: 384 counted against 4,271 and 5,311 billed for 16 s and 20 s
+        # clips, about 265 per second), so video gets a conservative allowance of 600 tokens per second on top.
+        video_allowance = VIDEO_TOKENS_PER_SECOND * -(-int(clip["duration_ms"]) // 1000)
+        bound = svc.settings.rates.token_upper_bound(model, int(counted) + video_allowance, 4000)
+
+        def dispatch() -> CallOutcome:
+            result = transport.create_response(body)
+            usage = result.json.get("usage") or {}
+            cost = svc.settings.rates.token_cost(model, int(usage.get("input_tokens") or 0),
+                                                 int((usage.get("input_tokens_details") or {}).get("cached_tokens") or 0),
+                                                 int(usage.get("output_tokens") or 0)) if usage else None
+            return CallOutcome(result.json, usage or None, cost, result.request_id, result.json.get("id"), result.status)
+        data, _call = dispatch_call(ctx, operation="baseline_native_video", model_id=model, upper_bound_microusd=bound,
+                                    dispatch=dispatch)
+        events = json.loads(output_text(data)).get("events", [])
+        usage = data.get("usage") or {}
+    finally:
+        transport.delete_file(file_id)
+    expected = [Interval(f"L{i}", e["event_type"], e["t_start_ms"], e["t_end_ms"], e.get("actor"))
+                for i, e in enumerate(label["events"], start=1) if e["event_type"] in ACTIONS and e.get("observable", True)]
+    visible = [Interval(f"A{i}", e["event_type"], e["t_start_ms"], e["t_end_ms"]) for i, e in enumerate(events, start=1)
+               if e["certainty"] == "visible"]
+    billed_input = int(usage.get("input_tokens") or 0)
+    return {"completed": True, "counted_input_tokens": counted, "billed_input_tokens": billed_input,
+            "billed_output_tokens": int(usage.get("output_tokens") or 0),
+            "count_covered_billed_input": billed_input <= int(counted),
+            "reservation_covered_billed_input": billed_input <= int(counted) + video_allowance, "events": events,
+            "scores": event_scores(visible, expected)}
+
+
 def cost_latency() -> dict:
     runs = [json.loads((p / "demo.json").read_text()) for p in sorted((ROOT / "demos").iterdir()) if (p / "demo.json").is_file()]
     cold_ms = [r["original_run"]["cold_timings_ms"].get("total_ms") for r in runs if r.get("original_run")]
@@ -262,10 +406,39 @@ def cost_latency() -> dict:
             "note": "Small n from synthetic clips. Costs are computed from provider-reported usage and the dated rate card."}
 
 
+def arms(svc: Services, live_baseline: bool) -> dict:
+    labels = {}
+    for path in (ROOT / "samples" / "synthetic").glob("*.label.json"):
+        video = path.with_name(path.name.replace(".label.json", ".mp4"))
+        labels[path.stem.replace(".label", "")] = json.loads(path.read_text()) | {"source_sha256": _sha(video)}
+    out: dict[str, Any] = {"B_geometry_only": "scored offline from stored candidates (synthetic_smoke.clips[].geometry_only)",
+                           "C_full_system": "scored from recorded live runs (synthetic_smoke.clips[].full_system)"}
+    out["D_without_reviewer"] = without_reviewer(labels)
+    if live_baseline:
+        a = {name: native_video_baseline(svc, label) for name, label in sorted(labels.items())}
+        tp, fp, fn = (sum(v["scores"][k] for v in a.values() if v.get("completed")) for k in ("tp", "fp", "fn"))
+        out["A_native_video_baseline"] = {"status": "measured", "model": svc.settings.models["investigator"], "clips": a,
+                                          "pooled": {"tp": tp, "fp": fp, "fn": fn, "precision": ratio(tp, tp + fp),
+                                                     "recall": ratio(tp, tp + fn), "f1": ratio(2 * tp, 2 * tp + fp + fn)},
+                                          "note": "Visible-certainty events only. The baseline sees the whole proxy video and the"
+                                                  " object's first-frame box, but no tracks, candidates or evidence frames."}
+    else:
+        out["A_native_video_baseline"] = {"status": "not_run", "note": "Run with --live-baseline (spends money)."}
+        try:
+            previous = json.loads((REPORTS / "evaluation.json").read_text())["arms"]["A_native_video_baseline"]
+            if previous.get("status") == "measured":
+                out["A_native_video_baseline"] = {**previous, "carried_over_from": previous.get("carried_over_from")
+                                                  or json.loads((REPORTS / "evaluation.json").read_text()).get("generated_at")}
+        except (OSError, ValueError, KeyError):
+            pass
+    return out
+
+
 def write_reports(report: dict) -> None:
     REPORTS.mkdir(exist_ok=True)
     (REPORTS / "evaluation.json").write_text(json.dumps({k: v for k, v in report.items() if k != "fault_injection"}, indent=2) + "\n")
-    (REPORTS / "fault-injection.json").write_text(json.dumps(report["fault_injection"], indent=2) + "\n")
+    (REPORTS / "fault-injection.json").write_text(json.dumps({"generated_at": report["generated_at"], **report["fault_injection"]},
+                                                             indent=2) + "\n")
     with (REPORTS / "evaluation.csv").open("w", newline="") as fh:
         writer = csv.writer(fh)
         writer.writerow(["section", "clip_id", "arm", "tp", "fp", "fn", "precision", "recall", "f1"])
@@ -276,6 +449,26 @@ def write_reports(report: dict) -> None:
                         s = clip[arm]
                         writer.writerow([section, clip["clip_id"], arm, s["tp"], s["fp"], s["fn"], s["precision"], s["recall"], s["f1"]])
     (REPORTS / "SUMMARY.md").write_text(summary_markdown(report))
+
+
+def arm_lines(r: dict) -> list[str]:
+    a = r["arms"]["A_native_video_baseline"]
+    d = r["arms"]["D_without_reviewer"]
+    lines = ["### Other arms on the same clips", ""]
+    if a.get("status") == "measured":
+        p = a["pooled"]
+        lines.append(f"A, Muse Spark on the whole video (no tracks, candidates or evidence frames): TP {p['tp']}, FP {p['fp']},"
+                     f" FN {p['fn']} on visible-certainty events" + (f" (measured {a['carried_over_from']})." if a.get("carried_over_from") else "."))
+    else:
+        lines.append("A, Muse Spark on the whole video: not run.")
+    useful = sum(v["questions"]["useful_answers"] for v in d.values() if v.get("completed"))
+    observable = sum(v["questions"]["observable_asked"] for v in d.values() if v.get("completed"))
+    wrong = sum(v["questions"]["wrong_assertions"] for v in d.values() if v.get("completed"))
+    abstain = sum(v["questions"]["correct_abstentions"] for v in d.values() if v.get("completed"))
+    unobs = sum(v["questions"]["unobservable_asked"] for v in d.values() if v.get("completed"))
+    lines.append(f"D, the same recorded investigator turns with the reviewer removed: {useful} useful answers of {observable}"
+                 f" observable questions, {abstain} of {unobs} correct abstentions, {wrong} wrong assertions.")
+    return lines
 
 
 def _fmt(value: Any) -> str:
@@ -303,12 +496,14 @@ def summary_markdown(r: dict) -> str:
         f"Questions: {s['questions']['useful_answers']} useful answers of {s['questions']['observable']} observable questions;"
         f" {s['questions']['unobservable']} unobservable question(s), correct abstention {_fmt(s['questions']['correct_abstention'])};"
         f" abstention rate {_fmt(s['questions']['abstention_rate'])} over {s['questions']['asked']} asked.", "",
+        *arm_lines(r), "",
         "## Planted faults (validator)", "",
         f"{f['planted']} planted faults and {f['clean_controls']} clean controls built from the recorded real run records.",
         f"Deterministic validator: **{f['validator']['caught']}/{f['planted']} caught**, **{f['validator']['false_rejects']}/{f['clean_controls']} false rejects**.", "",
         "| Category | Planted | Validator caught |", "| --- | ---: | ---: |",
         *[f"| {k.replace('_', ' ')} | {v['planted']} | {v['validator_caught']} |" for k, v in f["by_category"].items()], "",
         f"Secondary reviewer alone: {f['reviewer'].get('status')}"
+        + (f" (verdicts from the live run of {f['reviewer']['carried_over_from']})" if f["reviewer"].get("carried_over_from") else "")
         + (f", {f['reviewer']['caught']}/{f['planted']} caught, {f['reviewer']['false_rejects']}/{f['clean_controls']} false rejects."
            if f["reviewer"].get("status") == "measured" else "."),
         *( [f"Combined: {f['combined']['caught']}/{f['planted']} caught, {f['combined']['false_rejects']}/{f['clean_controls']} false rejects."]
@@ -329,22 +524,23 @@ def summary_markdown(r: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--live-review", action="store_true", help="Send fault cases to the live reviewer (spends money)")
+    parser.add_argument("--live-baseline", action="store_true", help="Run arm A, Muse Spark on the whole video (spends money)")
     args = parser.parse_args(argv)
     from ..demos import import_demos
     with tempfile.TemporaryDirectory(prefix="scenetrace-eval-") as tmp:
         env = {"SCENETRACE_DATA_DIR": tmp}
-        if not args.live_review:
+        if not (args.live_review or args.live_baseline):
             env["MODEL_API_KEY"] = ""
         settings = Settings.load(ROOT, env=env)
         svc = Services.create(settings)
         import_demos(svc, ROOT / "demos")
+        compared = arms(svc, args.live_baseline)  # before the fault suite appends revisions to the same records
         report = {"generated_at": utc_now(), "software_commit": _commit(),
                   "config_sha256": _sha(ROOT / "config" / "defaults.json"),
                   "label_sha256": {p.name: _sha(p) for p in sorted((ROOT / "samples" / "synthetic").glob("*.label.json"))},
                   "real_video": real_video(svc), "synthetic_smoke": synthetic_smoke(svc),
                   "fault_injection": fault_injection(svc, args.live_review), "cost_latency": cost_latency(),
-                  "arms": {"A_native_video_baseline": "not_run", "B_geometry_only": "scored offline from stored candidates",
-                           "C_full_system": "scored from recorded live runs", "D_without_reviewer": "not_run"}}
+                  "arms": compared}
         write_reports(report)
         print((REPORTS / "SUMMARY.md").read_text())
     return 0

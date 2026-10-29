@@ -1,6 +1,6 @@
 # SceneTrace evaluation summary
 
-Generated 2026-10-29T10:37:40.737Z from commit `289752e823e0618e5c40b28a7e3510173dc35545` with `make evaluate`.
+Generated 2026-10-29T11:30:46.072Z from commit `93dafb1970accaf8a712e148b4b40a69bdf3eb36` with `make evaluate`.
 
 ## Real-video evaluation
 
@@ -18,7 +18,12 @@ This checks the pipeline end to end; it is not a benchmark and includes the deve
 | geometry only | 1 | 1 | 0 | 0.5 | 1.0 | 0.6667 |
 
 Actor: 1 correct of 1 matched observable events (0 wrong confident assignments).
-Questions: 2 useful answers of 4 observable questions; 1 unobservable question(s), correct abstention 1.0; abstention rate 0.4 over 5 asked.
+Questions: 3 useful answers of 4 observable questions; 1 unobservable question(s), correct abstention 1.0; abstention rate 0.4 over 5 asked.
+
+### Other arms on the same clips
+
+A, Muse Spark on the whole video (no tracks, candidates or evidence frames): TP 1, FP 0, FN 0 on visible-certainty events.
+D, the same recorded investigator turns with the reviewer removed: 4 useful answers of 4 observable questions, 1 of 1 correct abstentions, 0 wrong assertions.
 
 ## Planted faults (validator)
 
@@ -34,7 +39,7 @@ Deterministic validator: **30/30 caught**, **0/10 false rejects**.
 | time substitution | 5 | 5 |
 | wrong predicate or citation | 5 | 5 |
 
-Secondary reviewer alone: measured, 22/30 caught, 3/10 false rejects.
+Secondary reviewer alone: measured (verdicts from the live run of 2026-10-29T10:37:40.737Z), 22/30 caught, 3/10 false rejects.
 Combined: 30/30 caught, 3/10 false rejects.
 
 ## Cost and latency (original live runs of the synthetic clips)

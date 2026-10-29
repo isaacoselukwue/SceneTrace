@@ -67,7 +67,7 @@ def publish_demo(svc: Services, analysis_id: str, *, title: str, description: st
     return target
 
 
-def _import_one(svc: Services, package: Path) -> str:
+def _import_one(svc: Services, package: Path, replay_questions: bool = True) -> str:
     manifest = json.loads((package / "demo.json").read_text(encoding="utf-8"))
     if sha256_file(package / "source.media") != manifest["source_sha256"] or sha256_file(package / "proxy.mp4") != manifest["proxy_sha256"]:
         raise AppError("DEMO_CORRUPT", f"{package.name}: media digests do not match the manifest.")
@@ -109,7 +109,7 @@ def _import_one(svc: Services, package: Path) -> str:
     _close(svc, job, state)
     if state not in ("completed", "partial"):
         raise AppError("DEMO_REPLAY_FAILED", f"{package.name}: the recorded analysis did not replay ({state}).")
-    for question in manifest["questions"]:
+    for question in manifest["questions"] if replay_questions else []:
         inv_id = new_investigation(svc, owner_id=PUBLIC, analysis_id=analysis_id, question=question, object_id="O1",
                                    run_mode="recorded_real")
         with svc.db.write() as conn:
@@ -141,10 +141,10 @@ def _close(svc: Services, job: dict, state: str) -> None:
                       {"summary": "Recorded run replayed without model calls."}, mode="recorded_real")
 
 
-def import_demos(svc: Services, source: Path) -> list[str]:
+def import_demos(svc: Services, source: Path, *, replay_questions: bool = True) -> list[str]:
     imported = []
     for package in sorted(p for p in source.iterdir() if (p / "demo.json").is_file()):
         started = time.monotonic()
-        imported.append(_import_one(svc, package))
+        imported.append(_import_one(svc, package, replay_questions))
         print(f"imported {package.name} in {time.monotonic() - started:.1f}s")
     return imported

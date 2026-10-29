@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shlex
 import subprocess
 import tempfile
 import time
@@ -150,7 +151,7 @@ def normalise_clip(source: Path, proxy_dir: Path, *, probe: ProbeResult, setting
         proxy_path=proxy_path, proxy_sha256=hashlib.sha256(proxy_path.read_bytes()).hexdigest(), width=width,
         height=height, fps=fps, frame_count=len(frame_map.entries), frame_map=frame_map, frame_map_path=map_path,
         frame_map_sha256=hashlib.sha256(map_bytes).hexdigest(),
-        command=[" ".join(decode[:4] + ["..."]), "select-exact decode | libx264 encode"], ffmpeg_version=version("ffmpeg"),
+        command=[shlex.join(decode), shlex.join(encode)], ffmpeg_version=version("ffmpeg"),
         preprocessing_version=PREPROCESSING_VERSION, elapsed_ms=int((time.monotonic() - started) * 1000))
 
 

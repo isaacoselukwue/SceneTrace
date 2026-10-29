@@ -3,6 +3,7 @@ running jobs interrupted instead of silently resending billed work."""
 from __future__ import annotations
 
 import threading
+import time
 import traceback
 from collections.abc import Callable
 
@@ -14,6 +15,7 @@ from .context import Services
 
 log = get("worker")
 ACTIVE = ("queued", "running", "cancel_requested")
+MAINTENANCE_INTERVAL_S = 600
 
 
 class Worker:
@@ -58,9 +60,22 @@ class Worker:
             conn.execute("UPDATE jobs SET state = 'running', started_at = ? WHERE id = ? AND state = 'queued'", (utc_now(), row["id"]))
             return dict(row)
 
+    def maintain(self) -> None:
+        """Expire private clips past retention and retry pending remote file deletions."""
+        from .cleanup import cleanup_remote_files, expire_clips
+        try:
+            expire_clips(self.svc)
+            cleanup_remote_files(self.svc)
+        except Exception:  # noqa: BLE001 - maintenance must never stop the worker
+            log.exception("maintenance failed")
+
     def _loop(self) -> None:
         self.alive = True
+        last_maintenance = time.monotonic()
         while not self._stop.is_set():
+            if time.monotonic() - last_maintenance > MAINTENANCE_INTERVAL_S:
+                last_maintenance = time.monotonic()
+                self.maintain()
             try:
                 job = self._claim()
             except Exception:  # noqa: BLE001 - keep the worker alive on transient database errors

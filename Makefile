@@ -11,8 +11,7 @@ bootstrap: ## Install locked Python and client dependencies
 	cd client && npm ci --no-audit --no-fund
 
 dev: ## Run the API on :$(PORT) and the Vite client on :5173 (proxying /api)
-	@echo "API http://127.0.0.1:$(PORT)  client http://127.0.0.1:5173"
-	$(PY) -m scenetrace serve --port $(PORT) & cd client && npm run dev; kill %1
+	PORT=$(PORT) tools/dev.sh
 
 test: ## Unit, integration and fixture-provider tests. No paid calls.
 	$(PY) -m pytest tests -o addopts="" -q

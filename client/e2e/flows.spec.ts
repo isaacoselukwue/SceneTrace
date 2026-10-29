@@ -84,3 +84,33 @@ test("switching between analyses never shows another clip's tracks", async ({ pa
   await page.locator("video").evaluate((v: HTMLVideoElement) => { v.currentTime = 9.0; });
   await expect(page.locator(".video-status")).toContainText("not detected", { timeout: 15_000 });
 });
+
+test("draw a destination zone and see it during playback", async ({ page }, info) => {
+  test.skip(info.project.name === "phone", "pointer drawing is exercised on desktop");
+  await page.goto("/");
+  await page.getByLabel("Video file").setInputFiles(SAMPLE);
+  await page.getByLabel(/I own this footage/).check();
+  await page.getByRole("button", { name: "Upload" }).click();
+  await expect(page.getByRole("heading", { name: "Select the object to follow" })).toBeVisible({ timeout: 60_000 });
+  await page.getByLabel("Draw a box on this frame").check();
+  const frame = page.locator(".selector-frame");
+  await frame.scrollIntoViewIfNeeded();
+  const box = (await frame.boundingBox())!;
+  const sx = box.width / 960;
+  await page.mouse.move(box.x + 509 * sx, box.y + 359 * sx);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 531 * sx, box.y + 407 * sx, { steps: 4 });
+  await page.mouse.up();
+  await page.getByLabel(/Draw a zone/).check();
+  await frame.scrollIntoViewIfNeeded();
+  const zoneBox = (await frame.boundingBox())!;  // checking the box scrolled the page
+  for (const [x, y] of [[770, 360], [840, 360], [840, 450], [770, 450]]) {
+    await page.mouse.click(zoneBox.x + x * sx, zoneBox.y + y * sx);
+  }
+  await expect(page.getByText("4 of 16 points.")).toBeVisible();
+  await page.getByLabel(/Development fixture/).check();
+  await page.getByRole("button", { name: "Analyse this object" }).click();
+  await expect(page.locator(".event-list li").first()).toBeVisible({ timeout: 90_000 });
+  await expect(page.locator("svg.overlay .zone-overlay")).toHaveCount(1);
+  await expect(page.locator("svg.overlay .zone-label")).toContainText("Z1 tray");
+});

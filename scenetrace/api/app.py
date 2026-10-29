@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import shutil
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, cast
@@ -242,6 +243,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
     # Clips ----------------------------------------------------------------------------------------
     @app.post(f"{API}/clips", response_model=S.ClipOut, status_code=201)
     async def upload_clip(request: Request, s: Session = Depends(mutation)) -> S.ClipOut:
+        upload_started = time.monotonic()
         cap = settings.limit("max_upload_bytes")
         declared = request.headers.get("content-length")
         if declared and declared.isdigit() and int(declared) > cap + 65_536:
@@ -324,9 +326,9 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         kind = "synthetic_render" if digest in svc.samples else "user_upload"
         with svc.db.write() as conn:
             conn.execute("INSERT INTO clips(id, owner_id, status, media_kind, display_name, consent_ack, source_sha256, source_bytes,"
-                         " created_at, expires_at, upload_ms) VALUES (?, ?, 'uploaded', ?, ?, 1, ?, ?, ?, ?, 0)",
+                         " created_at, expires_at, upload_ms) VALUES (?, ?, 'uploaded', ?, ?, 1, ?, ?, ?, ?, ?)",
                          (clip_id, s.owner_id, kind, name, digest, state["bytes"], utc_now(),
-                          expiry_for(settings.limit("private_retention_hours"))))
+                          expiry_for(settings.limit("private_retention_hours")), int((time.monotonic() - upload_started) * 1000)))
         enqueue(owner_id=s.owner_id, kind="normalise", key=None, payload=None, run_mode=None, clip_id=clip_id)
         return views.clip_out(svc, clip_row(clip_id, s))
 
