@@ -35,6 +35,9 @@ log = get("sam")
 PARSER_VERSION = "meta-sam-parser==0.1.0"
 METADATA = {"mask_encoding": "one_bit", "include_confidence": "true"}
 _TOKEN = re.compile(r"[MLZ]|-?\d+(?:\.\d+)?")
+_MASK_DATA = re.compile(r"(<\|mask;[^|]*?)data=[^;|]*")
+_MASK_OPENER = "<|mask;"
+_ONE_PIXEL_MASK = "data=1,1,!!!!!&O.lVP"
 
 
 async def _events(events: list[dict[str, Any]]):
@@ -123,9 +126,48 @@ def to_provider_boxes(result: Any, *, width: int, height: int, with_masks: bool 
     return boxes, diagnostics
 
 
+def with_placeholder_masks(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Swap mask payloads for a one-pixel mask in tracks that only need boxes; the parser decodes and
+    re-encodes every mask. Box tokens are untouched, and a mask split across deltas is carried forward."""
+    replaced: list[dict[str, Any]] = []
+    carried = ""
+    for event in events:
+        if event.get("type") == "response.output_text.delta" and isinstance(event.get("delta"), str):
+            text = carried + event["delta"]
+            cut = _unfinished_mask_start(text)
+            carried = text[cut:]
+            replaced.append({**event, "delta": _one_pixel_masks(text[:cut])})
+        else:
+            replaced.append(_one_pixel_mask_text(event))
+    return replaced
+
+
+def _one_pixel_masks(text: str) -> str:
+    return _MASK_DATA.sub(lambda match: match.group(1) + _ONE_PIXEL_MASK, text)
+
+
+def _unfinished_mask_start(text: str) -> int:
+    start = text.rfind(_MASK_OPENER)
+    if start != -1 and text.find("|>", start) == -1:
+        return start
+    for size in range(min(len(_MASK_OPENER) - 1, len(text)), 0, -1):
+        if _MASK_OPENER.startswith(text[-size:]):
+            return len(text) - size
+    return len(text)
+
+
+def _one_pixel_mask_text(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _one_pixel_masks(item) if key == "text" and isinstance(item, str) else _one_pixel_mask_text(item)
+                for key, item in value.items()}
+    if isinstance(value, list):
+        return [_one_pixel_mask_text(item) for item in value]
+    return value
+
+
 def _parse_convert(events: list[dict[str, Any]], media: str, width: int, height: int,
                    with_masks: bool) -> tuple[list[ProviderBox], list[str], str]:
-    result = parse_segmentation(events, media)  # type: ignore[arg-type]
+    result = parse_segmentation(events if with_masks else with_placeholder_masks(events), media)  # type: ignore[arg-type]
     boxes, diagnostics = to_provider_boxes(result, width=width, height=height, with_masks=with_masks)
     return boxes, diagnostics, str(getattr(result.outcome, "status", ""))
 

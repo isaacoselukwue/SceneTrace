@@ -14,7 +14,7 @@ from scenetrace.engine.candidates import generate_candidates
 from scenetrace.engine.observations import build_observations
 from scenetrace.engine.promotion import promote
 
-from .support import hero_frame_map, hero_tracking
+from .support import hero_frame_map, hero_tracking, load_events
 
 N = 160
 TARGET = [500, 360, 518, 404]  # about 47 px diagonal
@@ -209,6 +209,34 @@ def test_tracking_requests_opt_out_of_provider_storage(db, settings: Settings) -
     _target, _person, transport, _ctx = hero_tracking(db, settings)
     requests = [call for call in transport.calls if "model" in call]
     assert len(requests) == 2 and all(call["store"] is False for call in requests)
+
+
+def _split_inside_masks(events: list[dict], offset: int) -> list[dict]:
+    split = []
+    for event in events:
+        text = event.get("delta")
+        if event.get("type") != "response.output_text.delta" or "<|mask;" not in text:
+            split.append(event)
+            continue
+        start = text.index("<|mask;")
+        cut = start + offset if offset >= 0 else text.index("|>", start) + 2 + offset
+        split += [{**event, "delta": text[:cut]}, {**event, "delta": text[cut:]}]
+    return split
+
+
+@pytest.mark.parametrize("offset", [1, 3, 12, -1])
+def test_person_tracks_skip_mask_checks_and_keep_identical_boxes(offset: int) -> None:
+    from scenetrace.providers import meta_sam
+    events = load_events("sam_video_person.events.json")
+    full = meta_sam.parse_segmentation(events, "video")
+    expected, expected_diagnostics = meta_sam.to_provider_boxes(full, width=960, height=540, with_masks=False)
+    split = _split_inside_masks(events, offset)
+    assert len(split) > len(events)
+    placeholder_text = "".join(event["delta"] for event in meta_sam.with_placeholder_masks(split) if "delta" in event)
+    assert placeholder_text.count("<|mask;") == placeholder_text.count("data=1,1,!!!!!&O.lVP") > 100
+    boxes, diagnostics, status = meta_sam._parse_convert(split, "video", 960, 540, False)
+    assert (status, len(expected)) == ("completed", 139)
+    assert boxes == expected and diagnostics == expected_diagnostics
 
 
 def test_real_selection_on_image(db, settings: Settings) -> None:
