@@ -26,8 +26,31 @@ def _canonical(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
+def _pixels_key(data_url: str) -> str:
+    import base64
+    import io
+
+    from PIL import Image
+    try:
+        image = Image.open(io.BytesIO(base64.b64decode(data_url.split(",", 1)[1]))).convert("RGB")
+    except Exception:  # noqa: BLE001 - an undecodable image is keyed by its bytes
+        return "bytes:" + hashlib.sha256(data_url.encode()).hexdigest()
+    return f"pixels:{image.width}x{image.height}:" + hashlib.sha256(image.tobytes()).hexdigest()
+
+
+def _normalise(value: Any) -> Any:
+    """Replace image data URLs with a hash of their decoded pixels for request matching."""
+    if isinstance(value, str) and value.startswith("data:image/"):
+        return _pixels_key(value)
+    if isinstance(value, list):
+        return [_normalise(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _normalise(v) for k, v in value.items()}
+    return value
+
+
 def body_digest(kind: str, body: Any) -> str:
-    return hashlib.sha256(kind.encode() + b"\n" + _canonical(body)).hexdigest()
+    return hashlib.sha256(kind.encode() + b"\n" + _canonical(_normalise(body))).hexdigest()
 
 
 class Recording:

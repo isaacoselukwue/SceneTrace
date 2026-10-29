@@ -1,0 +1,45 @@
+{
+  "approval_note": "Rendered by tools/render_synthetic_clip.py. Contains no filmed people, faces, names or identifying content.",
+  "approved_by": "Not required: synthetic drawing with no real people",
+  "clip": {
+    "duration_ms": 20000,
+    "frame_map_sha256": "04deaf152cb37503a97d0709715a120e9d5b0dcf5ea1ea7b6c6a3ec23da40c24",
+    "preprocessing_version": "proxy-v1:fps10:long1280:h264-crf20:select-exact",
+    "proxy_fps": 10,
+    "proxy_frame_count": 200,
+    "proxy_height": 540,
+    "proxy_width": 960,
+    "rotation_deg": 0,
+    "source_bytes": 199638,
+    "source_codec": "h264",
+    "source_container": "mov,mp4,m4a,3gp,3g2,mj2",
+    "source_fps_den": 1,
+    "source_fps_num": 25,
+    "source_height": 540,
+    "source_width": 960
+  },
+  "description": "A drawn test animation. One figure walks past a bottle on a bench; a second lifts it and carries it away. SceneTrace rejects the pass-by and supports the visible pickup.",
+  "display_name": "Bench pickup synthetic",
+  "media_kind": "synthetic_render",
+  "models": {
+    "investigator": "muse-spark-1.3",
+    "reviewer": "muse-wonder-1.0",
+    "tracking": "sam-3.1"
+  },
+  "proxy_sha256": "abd85b749167087765af720e419c44b3cf8d6185bea0563dad5c0bcd05fd6310",
+  "questions": [
+    "What happened to the bottle?",
+    "Who picked up the bottle?",
+    "Did anyone touch the bottle between 00:04 and 00:08?"
+  ],
+  "recorded_at": "2026-10-29T10:18:36.088Z",
+  "schema_version": 1,
+  "source_sha256": "c1f76e12056d7f7ea3f94044de27e20714d83c00e7b911f083c4beb2cfbaf791",
+  "target": {
+    "frame_index": 0,
+    "kind": "concept",
+    "phrase": "bottle"
+  },
+  "title": "Bench pickup and pass-by",
+  "zones": []
+}

@@ -21,7 +21,8 @@ def main(argv: list[str] | None = None) -> int:
     pub.add_argument("analysis_id")
     pub.add_argument("--title", required=True)
     pub.add_argument("--description", required=True)
-    pub.add_argument("--approval-note", required=True, help="Who reviewed the footage for permission and identifying content")
+    pub.add_argument("--approved-by", required=True, help="The person who reviewed the footage for permission and identifying content")
+    pub.add_argument("--approval-note", required=True, help="What was reviewed and why publication is acceptable")
     pub.add_argument("--out", type=Path, default=Path("demos"))
     imp = sub.add_parser("import-demos", help="Import approved recorded demonstrations into the data directory")
     imp.add_argument("source", type=Path, nargs="?", default=Path("demos"))
@@ -46,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
     svc = Services.create(settings)
     if args.command == "publish-demo":
         path = publish_demo(svc, args.analysis_id, title=args.title, description=args.description,
-                            approval_note=args.approval_note, out_dir=args.out)
+                            approved_by=args.approved_by, approval_note=args.approval_note, out_dir=args.out)
         print(path)
         return 0
     if args.command == "import-demos":

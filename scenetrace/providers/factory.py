@@ -31,6 +31,20 @@ def review_mode(settings: Settings) -> str:
     return "image_secondary" if reviewer_capability(settings) == "passed" else "not_run"
 
 
+def recorded_review_mode(recording_dir: Path, reviewer_model: str) -> str:
+    """A replay shows the historical review: image review if the recording contains reviewer responses."""
+    recording = Recording(recording_dir)
+    for entry in recording.entries():
+        if entry["kind"] == "responses.create":
+            try:
+                model = json.loads((recording_dir / entry["response_file"]).read_text(encoding="utf-8")).get("model")
+            except (OSError, ValueError):
+                continue
+            if model == reviewer_model:
+                return "image_secondary"
+    return "not_run"
+
+
 def build_providers(settings: Settings, db: Database, run_mode: str, *, recording_dir: Path) -> ProviderSet:
     if run_mode == "fixture":
         return ProviderSet(run_mode="fixture", tracker=FixtureTracker(), assessor=FixtureAssessor(),
@@ -44,7 +58,7 @@ def build_providers(settings: Settings, db: Database, run_mode: str, *, recordin
                                        Recording(recording_dir))
     else:
         raise ValueError(f"unknown run mode {run_mode}")
-    mode = review_mode(settings)
+    mode = recorded_review_mode(recording_dir, settings.models["reviewer"]) if run_mode == "recorded_real" else review_mode(settings)
     return ProviderSet(run_mode=run_mode, tracker=MetaSamTracker(transport=transport, settings=settings, db=db),  # type: ignore[arg-type]
                        assessor=MetaAssessor(transport=transport, settings=settings),
                        investigator=MetaInvestigatorModel(transport=transport, settings=settings),

@@ -1,0 +1,44 @@
+{
+  "approval_note": "Rendered by tools/render_synthetic_clip.py. Contains no filmed people, faces, names or identifying content.",
+  "approved_by": "Not required: synthetic drawing with no real people",
+  "clip": {
+    "duration_ms": 16000,
+    "frame_map_sha256": "aebdf2d34cb48a880b5646e4a0720a7568f30cc9b72b011a9d1581fbd43c2f8a",
+    "preprocessing_version": "proxy-v1:fps10:long1280:h264-crf20:select-exact",
+    "proxy_fps": 10,
+    "proxy_frame_count": 160,
+    "proxy_height": 540,
+    "proxy_width": 960,
+    "rotation_deg": 0,
+    "source_bytes": 113029,
+    "source_codec": "h264",
+    "source_container": "mov,mp4,m4a,3gp,3g2,mj2",
+    "source_fps_den": 1,
+    "source_fps_num": 25,
+    "source_height": 540,
+    "source_width": 960
+  },
+  "description": "A drawn test animation. A figure stands in front of the bottle, and it is gone when they leave. The removal is never visible, so SceneTrace does not name an actor.",
+  "display_name": "Bench occlusion synthetic",
+  "media_kind": "synthetic_render",
+  "models": {
+    "investigator": "muse-spark-1.3",
+    "reviewer": "muse-wonder-1.0",
+    "tracking": "sam-3.1"
+  },
+  "proxy_sha256": "352b5873976314c1304c4805c0a97fa0dc456b0331a20456dd4cd1f1c2d434b6",
+  "questions": [
+    "Who took the bottle?",
+    "Where was the bottle last seen?"
+  ],
+  "recorded_at": "2026-10-29T10:20:10.995Z",
+  "schema_version": 1,
+  "source_sha256": "6720d935484def5cf539a0a8122c5088638d809e852faba1ce8f67b618a4fcfb",
+  "target": {
+    "frame_index": 0,
+    "kind": "concept",
+    "phrase": "bottle"
+  },
+  "title": "Hidden removal",
+  "zones": []
+}

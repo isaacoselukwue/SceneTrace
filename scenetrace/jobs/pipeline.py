@@ -7,6 +7,7 @@ before scheduling new work, and partial results are kept with explicit reasons.
 """
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import io
 import json
@@ -259,7 +260,10 @@ def _call_total(rows: list[dict]) -> tuple[int, str]:
     for r in rows:
         if r["state"] in ("released",):
             continue
-        amount = r["actual_microusd"] if r["actual_microusd"] is not None else r["reserved_microusd"]
+        if r["cost_status"] == "replayed":
+            amount = (loads(r["usage_json"], {}) or {}).get("original_microusd") or 0
+        else:
+            amount = r["actual_microusd"] if r["actual_microusd"] is not None else r["reserved_microusd"]
         total += amount or 0
         statuses.add(r["cost_status"])
     if not rows or statuses <= {"free", "released"}:
@@ -285,7 +289,11 @@ def run_question(svc: Services, job: dict, cancel: CancelToken) -> str:
     _update(svc, "investigations", inv["id"], status="running")
     ctx.emit("stage.started", {"stage": "investigating", "summary": "Reading the stored history before any new inspection."})
     providers = build_providers(svc.settings, svc.db, analysis["run_mode"], recording_dir=_recording_dir(svc, analysis, clip))
-    outcome = run_investigation(ctx, providers=providers, store=svc.store, storage=svc.storage, settings=svc.settings,
+    settings = svc.settings
+    if analysis["run_mode"] == "recorded_real":
+        # Replays reproduce the historical review whenever one was recorded, whatever the live setting is.
+        settings = dataclasses.replace(settings, enable_secondary_review=providers.review_mode != "not_run")
+    outcome = run_investigation(ctx, providers=providers, store=svc.store, storage=svc.storage, settings=settings,
                                 analysis_id=analysis["id"], owner_id=analysis["owner_id"], question=inv["question"],
                                 object_id=inv["object_id"])
     ctx.emit("stage.completed", {"stage": "compiling", "summary": f"Answer compiled from {len(outcome.claims)} validated claim(s)."})

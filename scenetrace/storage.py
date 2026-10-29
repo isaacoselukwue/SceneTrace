@@ -82,11 +82,12 @@ class Storage:
 
     # Assets ---------------------------------------------------------------
     def register_asset(self, *, owner_id: str, clip_id: str, path: Path, kind: str, media_type: str,
-                       derived: bool, analysis_id: str | None = None, public: bool = False) -> str:
+                       derived: bool, analysis_id: str | None = None, public: bool | None = None) -> str:
         if path.is_symlink() or not path.is_file():
             raise ValueError("asset must be a regular file")
         rel = self.relative(path)
         self.contained(rel)
+        public = (owner_id == "public") if public is None else public
         digest = sha256_file(path)
         asset_id = new_id("ast")
         with self.db.write() as conn:
