@@ -12,7 +12,7 @@ It is built on Meta Model API: **SAM 3.1** segments and tracks the object and th
 
 ## Demonstration
 
-[Watch the 3-minute demonstration (docs/media/scenetrace-demo.mp4)](docs/media/scenetrace-demo.mp4). It is a screen recording of the running application, including a live analysis and a live question against Meta Model API; waiting time during those two live calls is shown at 2x speed and labelled on screen. The clips are drawn test animations, not real footage.
+[Watch the demonstration (2 min 49 s, docs/media/scenetrace-demo.mp4)](docs/media/scenetrace-demo.mp4). It is a screen recording of the running application: a live analysis and a live question against Meta Model API, a recorded run in which the reviewer withheld a supported claim, and the integrity check. Waiting time during the two live calls is shown at 2x speed and labelled on screen. The clips are drawn test animations, not real footage.
 
 | | |
 | --- | --- |
@@ -20,6 +20,8 @@ It is built on Meta Model API: **SAM 3.1** segments and tracks the object and th
 | Every cited statement opens the original frames before, during and after. | A removal hidden behind a person stays possible, with no actor named. |
 | ![Why the pass-by was not counted](docs/media/pass-by-why-not.png) | ![Verification against a different head fails](docs/media/integrity-wrong-anchor.png) |
 | A pass-by is stored and explained, not counted. | Sealed evidence fails verification against a different head. |
+| ![Phone layout with tracking overlays and the visibility timeline](docs/media/workspace-phone.png) | ![Phone layout with cited answers](docs/media/answer-phone.png) |
+| On a phone: overlays, the visibility timeline and the history. | On a phone: cited answers, review verdicts and withheld claims. |
 
 ## Why it is different
 
@@ -36,16 +38,17 @@ A model that watches a video will happily say who took something. SceneTrace is 
 | Flow | Status |
 | --- | --- |
 | Upload an MP4/MOV (150 MB, 90 s caps), normalise to an exact 10 fps proxy with a source frame map | Working, tested |
-| Select the object by phrase (SAM finds candidates; you choose if several match) or by drawing a box | Working, live and fixture |
+| Select the object by phrase (SAM finds candidates; you choose if several match) or by drawing a box, and optionally draw a destination zone | Working, live and fixture |
 | Live tracking of the object (box-seeded SAM 3.1) and people (concept `person`), with coverage states | Working against Meta Model API |
 | Candidate engine: pick-up, put-down, placement in a drawn zone, pass-by and hidden-removal candidates | Working, tested on synthetic trajectories and real SAM output |
 | Muse Spark structured assessment of each candidate from original frames | Working against Meta Model API |
 | Questions answered by a bounded investigator (6 turns, 8 tool calls, 2 extra inspections, 1 repair) | Working against Meta Model API |
-| Optional Muse Wonder secondary review with images; it can block claims, never promote them | Working against Meta Model API |
+| Optional Muse Wonder secondary review with images; it can block claims, never promote them (off by default) | Working against Meta Model API |
+| Timeline under the video: when the object was observed, not detected or not analysed, with every event marked | Working |
 | Evidence drawer: original and annotated frames, source frame and timestamp, digests, assessments | Working |
 | Sealed export, download, verification against the server registry or a head you kept | Working |
 | Recorded demonstrations replayed through the same pipeline with no network and no model calls | Working, including in Docker |
-| Phone layout (390 px), keyboard focus, reduced motion | Working, browser-tested |
+| Phone layout (390 px) with touch drawing and no sideways scrolling, keyboard focus, reduced motion | Working, browser-tested on desktop and phone |
 
 Run modes are always labelled: **Live analysis**, **Recorded real run** (a replay of a stored live run, with its original date, models and cost) and **Development fixture** (deterministic code stands in for the models; a persistent banner says it is not a real analysis).
 
@@ -64,6 +67,10 @@ All figures below come from `make evaluate` (see [reports/SUMMARY.md](reports/SU
 
 The geometry-only arm turns the hidden removal into a pickup; the full system keeps it as a possible event with no actor. Actor attribution: 1 correct of 1 matched observable event, 0 wrong confident assignments. The unobservable question ("Who took the bottle?") was correctly answered with an abstention. With two drawn clips this is a smoke check, not a benchmark.
 
+**Whole-video baseline.** Given the same clips and the bottle's first-frame box, Muse Spark watching the whole video also found the pickup (13.0 to 14.0 s) and called the hidden removal possible, so on these easy clips it matches the full system's counts (TP 1, FP 0, FN 0). It returns no frame-level evidence, coverage state or validated actor; that is what SceneTrace adds. Two drawn clips cannot separate the two on accuracy.
+
+**Questions.** With the reviewer on, 3 of 4 observable questions received a useful answer; with the same recorded investigator turns and the reviewer removed, 4 of 4. Both correctly abstained on the unobservable question, and no answer asserted anything wrong.
+
 **Planted faults.** 30 deliberately corrupted claims (actor substitution, time substitution, wrong predicate or citation, nonexistent event, certainty escalation, stale revision; five each) and 10 clean controls, built from the recorded live run records:
 
 | Layer | Faults caught | Clean claims wrongly blocked |
@@ -72,13 +79,15 @@ The geometry-only arm turns the hidden removal into a pickup; the full system ke
 | Muse Wonder reviewer alone (live, images) | 22 / 30 | 3 / 10 |
 | Both | 30 / 30 | 3 / 10 |
 
-The reviewer misses changes it cannot see (one-second time shifts, superseded revisions) and is cautious with some true claims, which is why it is a secondary check and never the gate.
+The reviewer misses changes it cannot see (one-second time shifts, superseded revisions) and is cautious with some true claims, which is why it is a secondary check and never the gate. Planted faults are claim-versus-record errors, which the validator catches by construction; the reviewer exists for a different failure, a stored record that the frames do not support, which these faults do not plant. On the recorded questions it withheld one correct answer and caught nothing the validator missed, so it ships switched off (`SCENETRACE_ENABLE_SECONDARY_REVIEW=true` turns it on).
 
 **Cost and latency** (original live runs of the two synthetic clips, provider-reported usage at the dated rate card): cold analysis n=2, median 32.9 s (25.4 to 40.4 s), median USD 0.089; questions n=5, median 18.3 s (8.5 to 31.6 s), median USD 0.041.
 
 **Failure example.** In the recorded hidden-removal run, Muse Wonder asked for more evidence on the last-sighting claim, so "Where was the bottle last seen?" was answered only with uncertainty messages, although the sighting itself was supported.
 
-**Software checks.** 72 Python tests pass (2 opt-in live tests skipped by default), plus 53 tests of the core claim, budget and integrity modules, 7 client unit tests and 7 browser tests. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
+**Token counting for video.** `POST /v1/responses/input_tokens` counted 384 input tokens for each whole-video request, while the provider billed 4,271 and 5,311: the count does not include video tokens. SceneTrace therefore adds 600 tokens per second of video to the reservation for video requests, which covered the billed input in both runs. For image requests the count is an upper bound (881 counted, 670 billed).
+
+**Software checks.** 86 Python tests pass (2 opt-in live tests skipped by default), including an offline replay of both recorded demonstrations, plus 53 tests of the core claim, budget and integrity modules, 7 client unit tests and 10 browser test runs across desktop and phone viewports, one of which drives the whole flow on a phone with touch input. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
 
 ## Run it
 
@@ -126,7 +135,7 @@ Cold analysis runs once per selected object: normalise, resolve the target, trac
 - Short clips (up to 90 s), a fixed camera, one selected object, and at most six people. No moving cameras, crowds or long footage.
 - P1 and P2 are clip-local tracks, not identified people. There is no face recognition, identity linking or demographic inference, and identity is not assumed across gaps or exits.
 - "Supported" means supported by the available footage and checks. It is not proof of intent, guilt or ownership, and an integrity check does not prove that a video is genuine.
-- Live mode sends the normalised clip and selected frames to Meta Model API in Standard mode; uploaded provider files are deleted after each run, and local uploads expire after 24 hours. Use only footage you own and have permission to analyse.
+- Live mode sends the normalised clip and selected frames to Meta Model API in Standard mode, not the Contributor variants. Every model request is sent with `store: false`, which asks the provider not to keep the response for later retrieval; it is not a zero-retention guarantee. Uploaded provider files expire after 24 hours and are deleted when the run ends, and local uploads expire after 24 hours. Use only footage you own and have permission to analyse.
 - The real-video accuracy of the system is not yet measured.
 
 ## Built during the hackathon

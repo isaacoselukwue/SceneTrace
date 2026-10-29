@@ -24,13 +24,15 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
     const [rect, setRect] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
     const [frame, setFrame] = useState(0);
     const [overlays, setOverlays] = useState(true);
-    const [windows, setWindows] = useState<Record<number, ObservationOut[]>>({});
+    const [cache, setCache] = useState<{ generation: string; windows: Record<number, ObservationOut[]> }>({ generation: "", windows: {} });
     const [spans, setSpans] = useState<VisibilitySpanOut[]>([]);
     const width = clip.proxy_width ?? 0;
     const height = clip.proxy_height ?? 0;
     const fps = clip.proxy_fps ?? 10;
     const durationMs = clip.duration_ms ?? 0;
     const finished = ["completed", "partial"].includes(analysis.status);
+    const generation = `${analysis.analysis_id}:${analysis.status}`;
+    const windows = cache.generation === generation ? cache.windows : {};
 
     const seek = useCallback((ms: number) => {
       if (video.current) {
@@ -73,18 +75,21 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
 
     const windowIndex = Math.floor((frame * 1000) / fps / WINDOW_MS);
     useEffect(() => {
+      if (!finished) return;
       for (const index of [windowIndex, windowIndex + 1]) {
         if (windows[index] !== undefined) continue;
-        setWindows((w) => ({ ...w, [index]: [] }));
+        setCache((c) => ({ generation, windows: { ...(c.generation === generation ? c.windows : {}), [index]: [] } }));
         api.observations(analysis.analysis_id, index * WINDOW_MS, index * WINDOW_MS + WINDOW_MS - 1)
-          .then((page) => setWindows((w) => ({ ...w, [index]: page.observations })))
-          .catch(() => setWindows((w) => {
-            const next = { ...w };
+          .then((page) => setCache((c) => (c.generation === generation
+            ? { generation, windows: { ...c.windows, [index]: page.observations } } : c)))
+          .catch(() => setCache((c) => {
+            if (c.generation !== generation) return c;
+            const next = { ...c.windows };
             delete next[index];
-            return next;
+            return { generation, windows: next };
           }));
       }
-    }, [analysis.analysis_id, windowIndex, windows]);
+    }, [analysis.analysis_id, finished, generation, windowIndex, windows]);
 
     const current = useMemo(
       () => (windows[windowIndex] ?? []).filter((o) => o.proxy_frame_index === frame),
@@ -92,13 +97,15 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
     );
     const target = current.find((o) => o.entity_id === "O1");
     const nowMs = (frame * 1000) / fps;
-    const status = !target
-      ? "Loading tracks for this moment."
-      : target.detection_state === "observed"
-        ? `O1 observed at ${clipTime(nowMs)}.`
-        : target.detection_state === "unknown"
-          ? "O1 state unknown here: this frame was not fully analysed."
-          : "O1 not detected in this frame. Not detected is not the same as absent.";
+    const status = !finished
+      ? "Tracks appear here when the analysis finishes."
+      : !target
+        ? "Loading tracks for this moment."
+        : target.detection_state === "observed"
+          ? `O1 observed at ${clipTime(nowMs)}.`
+          : target.detection_state === "unknown"
+            ? "O1 state unknown here: this frame was not fully analysed."
+            : "O1 not detected in this frame. Not detected is not the same as absent.";
 
     return (
       <section className="video-panel" aria-label="Video with tracking overlays">

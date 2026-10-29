@@ -100,6 +100,50 @@ test("phone: draw the box by touch, analyse, ask, cite and verify without sidewa
   await fitsScreen();
 });
 
+test("tracks appear when an analysis finishes while its page is open", async ({ page }, info) => {
+  test.skip(info.project.name === "phone", "checked once on desktop");
+  let armed = false;
+  let released = false;
+  await page.route(/\/api\/v1\/analyses\/ana_[a-z0-9]+$/, async (route) => {
+    if (!armed || released) return route.continue();
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), status: "running" } });
+  });
+  await page.route(/\/api\/v1\/analyses\/ana_[a-z0-9]+\/observations/, async (route) => {
+    if (!armed || released) return route.continue();
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), observations: [] } });
+  });
+  await page.route(/\/api\/v1\/jobs\/job_[a-z0-9]+\/events/, async (route) => {
+    if (armed && !released) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      released = true;
+    }
+    await route.continue();
+  });
+  await page.goto("/");
+  await page.getByLabel("Video file").setInputFiles(SAMPLE);
+  await page.getByLabel(/I own this footage/).check();
+  await page.getByRole("button", { name: "Upload" }).click();
+  await expect(page.getByRole("heading", { name: "Select the object to follow" })).toBeVisible({ timeout: 60_000 });
+  await page.getByLabel("Draw a box").check();
+  const frame = page.locator(".selector-frame");
+  const box = (await frame.boundingBox())!;
+  const sx = box.width / 960;
+  await page.mouse.move(box.x + 509 * sx, box.y + 359 * sx);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 531 * sx, box.y + 407 * sx, { steps: 4 });
+  await page.mouse.up();
+  await page.getByLabel(/Development fixture/).check();
+  armed = true;
+  await page.getByRole("button", { name: "Analyse this object" }).click();
+  await expect.poll(() => released, { timeout: 30_000 }).toBe(true);
+  await expect(page.locator(".progress-panel")).toHaveCount(0, { timeout: 30_000 });
+  await page.locator("video").evaluate((v: HTMLVideoElement) => { v.currentTime = 3.0; });
+  await expect(page.locator(".video-status")).toContainText("O1 observed", { timeout: 15_000 });
+  await expect(page.locator("svg.overlay rect").first()).toBeAttached();
+});
+
 test("recorded demonstration replays with its labels and original cost", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Open recorded run" }).first().click();
