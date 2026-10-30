@@ -385,14 +385,14 @@ def test_meta_assessor_malformed_output_and_retry_rules(db, settings, world) -> 
     retry = FakeMuseTransport([ProviderError("rate_limit_exceeded", http_status=429, retryable=True, retry_after_s=0.01),
                                _response(_assessment_json())])
     MetaAssessor(transport=retry, settings=settings).assess(_live_ctx(db, settings), **kwargs)
-    attempts = [r["attempt"] for r in db.query("SELECT attempt FROM provider_calls WHERE operation = 'assess' ORDER BY created_at")]
+    attempts = [r["attempt"] for r in db.query("SELECT attempt FROM provider_calls WHERE operation = 'assess' ORDER BY created_at, rowid")]
     assert attempts[-2:] == [1, 2]
     ambiguous = FakeMuseTransport([ProviderError("server_error", http_status=500, retryable=True, ambiguous=True),
                                    _response(_assessment_json())])
     with pytest.raises(ProviderError):
         MetaAssessor(transport=ambiguous, settings=settings).assess(_live_ctx(db, settings), **kwargs)
     assert len(ambiguous.replies) == 1  # no blind retry of possibly billed work
-    last = db.one("SELECT cost_status FROM provider_calls WHERE operation = 'assess' ORDER BY created_at DESC LIMIT 1")
+    last = db.one("SELECT cost_status FROM provider_calls WHERE operation = 'assess' ORDER BY created_at DESC, rowid DESC LIMIT 1")
     assert last["cost_status"] == "unknown"
 
 
