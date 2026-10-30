@@ -22,6 +22,8 @@ It is built on Meta Model API: **SAM 3.1** segments and tracks the object and th
 | A pass-by is stored and explained, not counted. | Sealed evidence fails verification against a different head. |
 | ![Phone layout with tracking overlays and the visibility timeline](docs/media/workspace-phone.png) | ![Phone layout with cited answers](docs/media/answer-phone.png) |
 | On a phone: overlays, the visibility timeline and the history. | On a phone: cited answers, review verdicts and withheld claims. |
+| ![Phone selection screen with the instructions above the frame](docs/media/select-phone.png) | ![Phone evidence drawer with frames in time order](docs/media/evidence-phone.png) |
+| On a phone: choose the object, with the action button always in reach. | On a phone: the evidence for a supported pick-up, frame by frame. |
 
 ## Why it is different
 
@@ -87,7 +89,7 @@ The reviewer misses changes it cannot see (one-second time shifts, superseded re
 
 **Token counting for video.** `POST /v1/responses/input_tokens` counted 384 input tokens for each whole-video request, while the provider billed 4,271 and 5,311: the count does not include video tokens. SceneTrace therefore adds 600 tokens per second of video to the reservation for video requests, which covered the billed input in both runs. For image requests the count is an upper bound (881 counted, 670 billed).
 
-**Software checks.** 91 Python tests pass (2 opt-in live tests skipped by default), including an offline replay of both recorded demonstrations, plus 53 tests of the core claim, budget and integrity modules, 8 client unit tests and 11 browser test runs across desktop and phone viewports: one drives the whole flow on a phone with touch input, and one checks that cards sharing a row share their edges. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
+**Software checks.** 94 Python tests pass (2 opt-in live tests skipped by default), including an offline replay of both recorded demonstrations, plus 53 tests of the core claim, budget and integrity modules, 10 client unit tests and 11 browser test runs across desktop and phone viewports: one drives the whole flow on a phone with touch input and checks touch target sizes, and one checks that cards sharing a row share their edges. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
 
 ## Run it
 
@@ -106,7 +108,9 @@ cd client && npm run build && cd ..
 .venv/bin/python -m scenetrace serve          # http://127.0.0.1:8765
 ```
 
-Other commands: `make dev` (API plus Vite dev server), `make test`, `make test-ui`, `make test-live` (opt-in, spends money), `make evaluate`, `make check` (lint, types, tests, schema drift, secret scan) and `make build`. With Docker, `docker compose up --build` runs one process with a persistent volume and imports the recorded runs. Without an access code it serves recorded runs to everyone and allows uploads only to an owner signed in with `SCENETRACE_DEMO_ACCESS_CODE`.
+Other commands: `make dev` (API plus Vite dev server), `make test`, `make test-ui`, `make test-live` (opt-in, spends money), `make evaluate`, `make check` (lint, types, tests, schema drift, secret scan) and `make build`. With Docker, `docker compose up --build` runs one process with a persistent volume and imports the recorded runs.
+
+Access: a server listening on 127.0.0.1 with no access code treats every local browser as the owner. A server reachable from other machines, such as the Docker container, shows the recorded runs to everyone and accepts uploads and questions only from an owner who signs in with the code set in `SCENETRACE_DEMO_ACCESS_CODE`. The owner stays signed in across reloads for 12 hours. Changing the code signs every owner out, and clips uploaded under the previous code are no longer listed.
 
 ## How it works
 

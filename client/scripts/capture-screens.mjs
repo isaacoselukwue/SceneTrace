@@ -63,5 +63,18 @@ await phone.getByRole("tab", { name: "Ask" }).click();
 await phone.locator(".area-tabs").evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 64));
 await settle(phone, 600);
 await phone.screenshot({ path: `${out}/answer-phone.png` });
+await phone.getByRole("tab", { name: "History" }).click();
+await phone.getByRole("button", { name: /^Evidence E3/ }).click();
+await phone.locator(".drawer figure img").first().waitFor();
+await settle(phone, 800);
+await phone.screenshot({ path: `${out}/evidence-phone.png` });
+await phone.keyboard.press("Escape");
+if (owned) {
+  const clipId = await phone.evaluate(async (id) => (await (await fetch(`/api/v1/analyses/${id}`)).json()).clip_id, owned);
+  await phone.goto(`${base}/#/clip/${clipId}`);
+  await phone.getByRole("heading", { name: "Select the object to follow" }).waitFor();
+  await settle(phone, 1200);
+  await phone.screenshot({ path: `${out}/select-phone.png` });
+}
 await browser.close();
 console.log("screenshots written to docs/media");
