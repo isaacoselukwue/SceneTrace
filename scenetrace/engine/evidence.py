@@ -58,15 +58,17 @@ def sample_frames(candidate: Candidate, frame_map: FrameMap, observations: list[
 def _annotate(raw: Path, out: Path, boxes: list[tuple[str, list[int]]], scale_x: float, scale_y: float) -> None:
     image = Image.open(raw).convert("RGB")
     draw = ImageDraw.Draw(image)
-    font = ImageFont.load_default()
     width = max(2, round(image.width / 400))
+    label_height = max(14, round(image.width / 30))
+    padding = max(3, label_height // 5)
+    font = ImageFont.load_default(size=round(label_height * 0.72))
     for label, box in boxes:
         colour = COLOURS.get(label[0], (255, 255, 255))
         x0, y0, x1, y1 = box[0] * scale_x, box[1] * scale_y, box[2] * scale_x, box[3] * scale_y
         draw.rectangle([x0, y0, x1, y1], outline=colour, width=width)
-        tw = draw.textlength(label, font=font)
-        draw.rectangle([x0, max(0, y0 - 14), x0 + tw + 6, max(14, y0)], fill=colour)
-        draw.text((x0 + 3, max(0, y0 - 13)), label, fill=(15, 23, 42), font=font)
+        label_top = max(0, y0 - label_height)
+        draw.rectangle([x0, label_top, x0 + draw.textlength(label, font=font) + 2 * padding, label_top + label_height], fill=colour)
+        draw.text((x0 + padding, label_top + label_height / 2), label, fill=(15, 23, 42), font=font, anchor="lm")
     image.save(out, format="PNG")
 
 

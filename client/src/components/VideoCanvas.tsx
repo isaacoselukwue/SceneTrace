@@ -2,7 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { api, type AnalysisOut, type ClipOut, type ObservationOut, type VisibilitySpanOut } from "../api/client";
 import { candidateActors, describeEvent, sortedEvents } from "../lib/events";
 import { clipTime } from "../lib/format";
-import { containRect, frameAt, type Rect } from "../lib/geometry";
+import { containRect, frameAt, placeLabels, type Rect } from "../lib/geometry";
 
 export interface VideoHandle {
   seek(ms: number): void;
@@ -11,6 +11,7 @@ export interface VideoHandle {
 const WINDOW_MS = 10_000;
 const LANE_PX = 18;
 const MAX_LANES = 3;
+const LABEL_HEIGHT_PX = 18;
 const COLOURS: Record<string, string> = { O: "#14b8a6", P: "#f59e0b" };
 const VISIBILITY_TEXT: Record<VisibilitySpanOut["state"], string> = {
   observed: "Observed",
@@ -97,6 +98,17 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
     );
     const target = current.find((o) => o.entity_id === "O1");
     const nowMs = (frame * 1000) / fps;
+    const proxyPixelsPerScreenPixel = rect.width > 0 ? width / rect.width : 1;
+    const labelHeight = LABEL_HEIGHT_PX * proxyPixelsPerScreenPixel;
+    const tracked = current.filter((o) => o.detection_state === "observed" && o.box);
+    const boxArea = (o: ObservationOut) => { const [x0, y0, x1, y1] = o.box as number[]; return (x1 - x0) * (y1 - y0); };
+    const labels = placeLabels(
+      [...tracked]
+        .sort((a, b) => Number(b.entity_id === "O1") - Number(a.entity_id === "O1") || boxArea(b) - boxArea(a))
+        .map((o) => ({ id: o.entity_id, box: o.box as number[], width: (o.entity_id.length * 8 + 10) * proxyPixelsPerScreenPixel })),
+      labelHeight, width, height,
+    );
+    const drawOrder = [...tracked].sort((a, b) => Number(a.entity_id === "O1") - Number(b.entity_id === "O1"));
     const status = !finished
       ? "Tracks appear here when the analysis finishes."
       : !target
@@ -129,24 +141,32 @@ export const VideoCanvas = forwardRef<VideoHandle, { clip: ClipOut; analysis: An
               {analysis.zones.map((z) => z.polygon && (
                 <g key={z.entity_id}>
                   <polygon points={z.polygon.map((p) => p.join(",")).join(" ")} className="zone-overlay" />
-                  <text x={z.polygon[0][0] + 4} y={z.polygon[0][1] + 16} className="zone-label">{z.entity_id} {z.label}</text>
+                  <text x={z.polygon[0][0] + 4 * proxyPixelsPerScreenPixel} y={z.polygon[0][1] + 16 * proxyPixelsPerScreenPixel}
+                    className="zone-label" style={{ fontSize: 13 * proxyPixelsPerScreenPixel }}>{z.entity_id} {z.label}</text>
                 </g>
               ))}
-              {current
-                .filter((o) => o.detection_state === "observed" && o.box)
-                .map((o) => {
-                  const [x0, y0, x1, y1] = o.box as number[];
-                  const colour = COLOURS[o.entity_id[0]] ?? "#64748b";
-                  return (
-                    <g key={o.entity_id}>
-                      {o.mask_svg && <path d={o.mask_svg} fill={colour} fillOpacity={0.35} stroke={colour} strokeWidth={1.5} />}
-                      <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} fill="none" stroke={colour} strokeWidth={2}
-                        strokeDasharray={o.mask_svg ? undefined : "6 4"} />
-                      <rect x={x0} y={Math.max(0, y0 - 18)} width={o.entity_id.length * 9 + 10} height={18} rx={3} fill={colour} />
-                      <text x={x0 + 5} y={Math.max(13, y0 - 5)} className="overlay-label">{o.entity_id}</text>
-                    </g>
-                  );
-                })}
+              {drawOrder.map((o) => {
+                const [x0, y0, x1, y1] = o.box as number[];
+                const colour = COLOURS[o.entity_id[0]] ?? "#64748b";
+                return (
+                  <g key={o.entity_id}>
+                    {o.mask_svg && <path d={o.mask_svg} fill={colour} fillOpacity={0.35} stroke={colour} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />}
+                    <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} fill="none" stroke={colour} strokeWidth={2}
+                      strokeDasharray={o.mask_svg ? undefined : "6 4"} vectorEffect="non-scaling-stroke" />
+                  </g>
+                );
+              })}
+              {drawOrder.map((o) => {
+                const label = labels.get(o.entity_id);
+                return label && (
+                  <g key={`${o.entity_id}-label`}>
+                    <rect x={label.x} y={label.y} width={(o.entity_id.length * 8 + 10) * proxyPixelsPerScreenPixel} height={labelHeight}
+                      rx={3 * proxyPixelsPerScreenPixel} fill={COLOURS[o.entity_id[0]] ?? "#64748b"} />
+                    <text x={label.x + 5 * proxyPixelsPerScreenPixel} y={label.y + 13 * proxyPixelsPerScreenPixel} className="overlay-label"
+                      style={{ fontSize: 12 * proxyPixelsPerScreenPixel }}>{o.entity_id}</text>
+                  </g>
+                );
+              })}
             </svg>
           )}
         </div>

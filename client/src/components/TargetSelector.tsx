@@ -89,6 +89,7 @@ export function TargetSelector({ clip, capabilities, onStarted }: {
   }
 
   const rect = holder.current ? containRect(holder.current.clientWidth, holder.current.clientHeight, width, height) : null;
+  const proxyPixelsPerScreenPixel = rect && rect.width > 0 ? width / rect.width : 1;
   const zoneIncomplete = zoneOn && zone.length > 0 && zone.length < 3;
   const hint = tool === "zone"
     ? "Tap or click the corners of the zone on the frame."
@@ -97,6 +98,10 @@ export function TargetSelector({ clip, capabilities, onStarted }: {
       : "SAM 3.1 looks for the phrase on this frame. If several things match, you choose one.";
   return (
     <section className="panel selector" aria-labelledby="selector-title">
+      <div className="selector-head">
+        <h2 id="selector-title">Select the object to follow</h2>
+        <p className="muted">Choose a frame where the object is clearly visible, then describe it or draw a box.</p>
+      </div>
       <div className="selector-grid">
         <div className="selector-media">
           <div className={`selector-frame tool-${tool}`} ref={holder} onPointerDown={onPointerDown}
@@ -110,7 +115,7 @@ export function TargetSelector({ clip, capabilities, onStarted }: {
                 {zone.length > 0 && (
                   <>
                     <polygon points={zone.map((p) => p.join(",")).join(" ")} className="zone-shape" />
-                    {zone.map(([x, y], i) => <circle key={i} cx={x} cy={y} r={Math.max(4, width / 160)} className="zone-point" />)}
+                    {zone.map(([x, y], i) => <circle key={i} cx={x} cy={y} r={6 * proxyPixelsPerScreenPixel} className="zone-point" />)}
                   </>
                 )}
                 {box && <rect x={box[0]} y={box[1]} width={box[2] - box[0]} height={box[3] - box[1]} className="box-shape" />}
@@ -127,8 +132,6 @@ export function TargetSelector({ clip, capabilities, onStarted }: {
         </div>
 
         <div className="selector-controls">
-          <h2 id="selector-title">Select the object to follow</h2>
-          <p className="muted">Choose a frame where the object is clearly visible, then describe it or draw a box.</p>
           <fieldset className="field-group">
             <legend>How to identify it</legend>
             <div className="segmented">
@@ -150,7 +153,7 @@ export function TargetSelector({ clip, capabilities, onStarted }: {
             <legend>Destination zone (optional)</legend>
             <label className="check">
               <input type="checkbox" checked={zoneOn} onChange={(e) => setZoneOn(e.target.checked)} />
-              <span>Draw a zone, such as a tray or a bin, by clicking its corners on the frame</span>
+              <span>Draw a zone, such as a tray or a bin, by tapping or clicking its corners on the frame</span>
             </label>
             {zoneOn && (
               <div className="zone-tools">
@@ -183,14 +186,14 @@ export function TargetSelector({ clip, capabilities, onStarted }: {
             {!capabilities.live_available && <p className="fineprint">Live analysis is unavailable: {capabilities.live_block_reason}.</p>}
           </fieldset>
           {error && <p className="error" role="alert">{error}</p>}
-          <div className="selector-submit">
-            <button type="button" className="block" onClick={start} disabled={busy || zoneIncomplete || (kind === "box" ? !box : !phrase.trim())}>
-              {busy ? "Starting…" : "Analyse this object"}
-            </button>
-            <p className="fineprint caps">
-              Caps: {usd(capabilities.limits.analysis_cap_microusd)} per analysis, {usd(capabilities.limits.question_cap_microusd)} per question.
-            </p>
-          </div>
+        </div>
+        <div className="selector-submit">
+          <button type="button" className="block" onClick={start} disabled={busy || zoneIncomplete || (kind === "box" ? !box : !phrase.trim())}>
+            {busy ? "Starting…" : "Analyse this object"}
+          </button>
+          <p className="fineprint caps">
+            Caps: {usd(capabilities.limits.analysis_cap_microusd)} per analysis, {usd(capabilities.limits.question_cap_microusd)} per question.
+          </p>
         </div>
       </div>
     </section>

@@ -58,9 +58,13 @@ test("phone: draw the box by touch, analyse, ask, cite and verify without sidewa
   await page.getByLabel("Video file").setInputFiles(SAMPLE);
   await page.getByLabel(/I own this footage/).check();
   await page.getByRole("button", { name: "Upload" }).click();
-  await expect(page.getByRole("heading", { name: "Select the object to follow" })).toBeVisible({ timeout: 60_000 });
-  await page.getByLabel("Draw a box").check();
+  const heading = page.getByRole("heading", { name: "Select the object to follow" });
+  await expect(heading).toBeVisible({ timeout: 60_000 });
   const frame = page.locator(".selector-frame");
+  const headingBottom = await heading.evaluate((el) => el.getBoundingClientRect().bottom);
+  expect(headingBottom).toBeLessThan(await frame.evaluate((el) => el.getBoundingClientRect().top));
+  await expect(page.getByRole("button", { name: "Analyse this object" })).toBeInViewport();
+  await page.getByLabel("Draw a box").check();
   await frame.evaluate((el) => el.scrollIntoView({ block: "center" }));
   const box = (await frame.boundingBox())!;
   const sx = box.width / 960;
@@ -79,6 +83,8 @@ test("phone: draw the box by touch, analyse, ask, cite and verify without sidewa
   await page.getByRole("button", { name: "Analyse this object" }).click();
   await expect(page.locator(".event-list li").first()).toBeVisible({ timeout: 90_000 });
   await fitsScreen();
+  const touchTargetHeights = await page.locator(".time-chip, .evidence-link").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height));
+  expect(Math.min(...touchTargetHeights)).toBeGreaterThanOrEqual(40);
   const tabs = page.locator(".tabs.mobile-only");
   await tabs.getByRole("tab", { name: "Ask" }).click();
   await page.getByRole("button", { name: "Who picked it up?" }).click();
@@ -146,8 +152,13 @@ test("tracks appear when an analysis finishes while its page is open", async ({ 
 
 test("recorded demonstration replays with its labels and original cost", async ({ page }) => {
   await page.goto("/");
+  const demoTitle = (await page.locator(".demo-card h3").first().textContent())!;
   await page.getByRole("button", { name: "Open recorded run" }).first().click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(demoTitle);
   await expect(page.locator(".banner-recorded")).toContainText("Replayed without new model calls");
+  const trackLabel = page.locator("svg.overlay .overlay-label").first();
+  await expect(trackLabel).toBeVisible();
+  expect((await trackLabel.boundingBox())!.height).toBeGreaterThanOrEqual(10);
   await expect(page.locator(".banner-synthetic")).toBeVisible();
   const tabs = page.locator(".tabs.mobile-only");
   if (await tabs.isVisible()) await tabs.getByRole("tab", { name: "History" }).click();

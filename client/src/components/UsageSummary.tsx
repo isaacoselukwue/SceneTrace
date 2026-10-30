@@ -58,10 +58,10 @@ export function UsageSummary({ analysis }: { analysis: AnalysisOut }) {
                 {paid.map((c) => (
                   <tr key={c.provider_call_id}>
                     <td>{c.operation}{c.attempt > 1 ? ` (attempt ${c.attempt})` : ""}</td>
-                    <td className="mono">{c.model_id}</td>
-                    <td>{usd(c.reserved_microusd)}</td>
-                    <td>{usd(c.actual_microusd)}</td>
-                    <td>{c.cost_status.replaceAll("_", " ")}</td>
+                    <td className="mono" data-label="Model">{c.model_id}</td>
+                    <td data-label="Reserved">{usd(c.reserved_microusd)}</td>
+                    <td data-label="Charged">{usd(c.actual_microusd)}</td>
+                    <td data-label="Status">{c.cost_status.replaceAll("_", " ")}</td>
                   </tr>
                 ))}
               </tbody>

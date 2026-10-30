@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, ApiError, type AnalysisOut, type CapabilitiesOut, type ClipOut, type SessionOut } from "../api/client";
+import { api, ApiError, type AnalysisOut, type CapabilitiesOut, type ClipOut, type DemoOut, type SessionOut } from "../api/client";
 import { useJobEvents } from "../lib/useJobEvents";
 import { AnswerPanel, AnswerPlaceholder } from "./AnswerPanel";
 import { ModeBanner, RunModeBadge } from "./Badges";
@@ -85,6 +85,7 @@ export function AnalysisPage({ analysisId, session, navigate }: {
 }) {
   const [analysis, setAnalysis] = useState<AnalysisOut | null>(null);
   const [clip, setClip] = useState<ClipOut | null>(null);
+  const [demoTitle, setDemoTitle] = useState<string | null>(null);
   const [openEvent, setOpenEvent] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("history");
   const [error, setError] = useState<string | null>(null);
@@ -92,14 +93,21 @@ export function AnalysisPage({ analysisId, session, navigate }: {
   const load = useCallback(async () => {
     try {
       const a = await api.analysis(analysisId);
+      const noDemos: DemoOut[] = [];
+      const [loadedClip, demos] = await Promise.all([
+        api.clip(a.clip_id),
+        a.demo ? api.demos().catch(() => noDemos) : Promise.resolve(noDemos),
+      ]);
+      setDemoTitle(demos.find((d) => d.analysis_id === analysisId)?.title ?? null);
       setAnalysis(a);
-      setClip(await api.clip(a.clip_id));
+      setClip(loadedClip);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Not found.");
     }
   }, [analysisId]);
   useEffect(() => { load(); }, [load]);
-  usePageTitle(clip?.display_name ?? null);
+  const title = demoTitle ?? clip?.display_name ?? null;
+  usePageTitle(title);
   const running = analysis && ["queued", "running"].includes(analysis.status);
   const { events } = useJobEvents(running ? analysis.job_id : null, () => load());
   if (error) return <main id="main"><BackLink navigate={navigate} /><p className="error">{error}</p></main>;
@@ -114,7 +122,7 @@ export function AnalysisPage({ analysisId, session, navigate }: {
       <header className="page-head">
         <BackLink navigate={navigate} />
         <div className="title-row">
-          <h1>{clip.display_name}</h1>
+          <h1>{title}</h1>
           <div className="title-badges">
             <RunModeBadge mode={analysis.run_mode} />
             {analysis.status === "partial" && (

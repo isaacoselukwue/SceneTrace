@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { JobEvent } from "../api/client";
 import { explainRejection, whyNotSupported } from "./explain";
 import { clipTime, duration, elapsed, interval, usd } from "./format";
-import { boxFromDrag, containRect, frameAt, toMediaPixel } from "./geometry";
+import { boxFromDrag, containRect, frameAt, placeLabels, toMediaPixel } from "./geometry";
 import { mergeEvents } from "./useJobEvents";
 
 describe("letterbox geometry", () => {
@@ -29,6 +29,26 @@ describe("letterbox geometry", () => {
     expect(boxFromDrag({ x: 30, y: 40 }, { x: 10, y: 5 }, 960, 540)).toEqual([10, 5, 31, 41]);
     expect(boxFromDrag({ x: 959, y: 539 }, { x: 950, y: 530 }, 960, 540)).toEqual([950, 530, 960, 540]);
     expect(frameAt(13.55, 10)).toBe(136);
+  });
+});
+
+describe("overlay labels", () => {
+  it("keeps the first label above its box and moves a colliding label to the top inside its own box", () => {
+    const placed = placeLabels([
+      { id: "O1", box: [100, 100, 200, 200], width: 30 },
+      { id: "P1", box: [110, 105, 220, 300], width: 30 },
+    ], 18, 960, 540);
+    expect(placed.get("O1")).toEqual({ x: 100, y: 82 });
+    expect(placed.get("P1")).toEqual({ x: 110, y: 105 });
+  });
+
+  it("leaves out a label that has no free spot and clamps labels to the frame", () => {
+    const placed = placeLabels([
+      { id: "P1", box: [0, 0, 40, 18], width: 40 },
+      { id: "P2", box: [0, 0, 40, 18], width: 40 },
+    ], 18, 960, 540);
+    expect(placed.get("P1")).toEqual({ x: 0, y: 0 });
+    expect(placed.has("P2")).toBe(false);
   });
 });
 

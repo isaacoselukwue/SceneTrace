@@ -13,7 +13,8 @@ const ASSESSMENT_FIELDS: [string, string][] = [
   ["support_changed", "Support changed"],
   ["carried_motion_visible", "Carried motion visible"],
 ];
-const ROLE_TEXT: Record<string, string> = { before: "Before", during: "During", after: "After", inspection: "Inspection" };
+const ROLE_TEXT: Record<string, string> = { observation: "Observation", before: "Before", during: "During", after: "After" };
+const ROLE_ORDER: Record<string, number> = { observation: 0, before: 1, during: 2, after: 3 };
 
 function Digest({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -52,11 +53,15 @@ export function EvidenceDrawer({ analysis, eventId, onClose, onSeek }: {
   const r = event.current.record;
   const candidate = analysis.candidates.find((c) => c.candidate_id === event.candidate_id);
   const items = analysis.evidence.filter((e) => e.candidate_id === event.candidate_id);
-  const raw = items.filter((e) => !e.derived);
+  const sameFrames = new Map<string, EvidenceOut[]>();
+  for (const e of items.filter((item) => !item.derived).sort((a, b) => a.t_ms - b.t_ms || ROLE_ORDER[a.role] - ROLE_ORDER[b.role])) {
+    sameFrames.set(e.asset_sha256, [...(sameFrames.get(e.asset_sha256) ?? []), e]);
+  }
+  const raw = [...sameFrames.values()];
   const annotated = new Map(items.filter((e) => e.derived).map((e) => [e.proxy_frame_index, e]));
   const assessments = analysis.assessments.filter((a) => a.candidate_id === event.candidate_id);
   const reasons = whyNotSupported(r.reason_codes);
-  const frames: EvidenceOut[] = tab === "source" ? raw : raw.map((e) => annotated.get(e.proxy_frame_index) ?? e);
+  const frames = raw.map((group) => ({ group, shown: tab === "source" ? group[0] : annotated.get(group[0].proxy_frame_index) ?? group[0] }));
   const tone = r.status === "supported" ? "ok" : r.status === "rejected" ? "bad" : "warn";
   return (
     <div className="drawer-backdrop" onClick={onClose}>
@@ -99,13 +104,15 @@ export function EvidenceDrawer({ analysis, eventId, onClose, onSeek }: {
             </p>
             {frames.length === 0 && <p className="muted">No frames were extracted for this event.</p>}
             <div className="frames">
-              {frames.map((e) => (
+              {frames.map(({ group, shown: e }) => (
                 <figure key={e.evidence_id}>
-                  <img src={e.image_url} alt={`${e.role} frame at ${clipTime(e.t_ms)}`} loading="lazy" width={e.width} height={e.height} />
+                  <img src={e.image_url} alt={`${ROLE_TEXT[e.role] ?? e.role} frame at ${clipTime(e.t_ms)}`} loading="lazy" width={e.width} height={e.height} />
                   <figcaption>
                     <span className="frame-role">
-                      <strong>{e.evidence_id}</strong>
-                      <span className="badge tone-neutral">{ROLE_TEXT[e.role] ?? e.role}</span>
+                      <span className="frame-name">
+                        <strong>{group.map((item) => item.evidence_id).join(", ")}</strong>
+                        <span className="frame-role-text">{[...new Set(group.map((item) => ROLE_TEXT[item.role] ?? item.role))].join(" / ")}</span>
+                      </span>
                       <button type="button" className="time-chip" onClick={() => onSeek(e.t_ms)} aria-label={`Seek video to ${clipTime(e.t_ms)}`}>
                         <Icon name="play" size={10} /> {clipTime(e.t_ms)}
                       </button>
@@ -143,11 +150,16 @@ export function EvidenceDrawer({ analysis, eventId, onClose, onSeek }: {
             <section className="drawer-section">
               <h3>Geometric cues</h3>
               <p className="fineprint">Distances are in basis points of the object's size. Closeness is not contact.</p>
-              <dl className="cues">
-                {Object.entries(candidate.cues).map(([k, v]) => (
-                  <div key={k}><dt>{k.replaceAll("_", " ")}</dt><dd>{v === null ? "n/a" : String(v)}</dd></div>
-                ))}
-              </dl>
+              <details className="cues">
+                <summary>Show {Object.keys(candidate.cues).length} measurements</summary>
+                <table>
+                  <tbody>
+                    {Object.entries(candidate.cues).map(([k, v]) => (
+                      <tr key={k}><th scope="row">{k.replaceAll("_", " ")}</th><td>{v === null ? "n/a" : String(v)}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
             </section>
           )}
           <section className="drawer-section">

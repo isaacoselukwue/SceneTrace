@@ -42,3 +42,28 @@ export function boxFromDrag(a: { x: number; y: number }, b: { x: number; y: numb
 export function frameAt(tSeconds: number, fps: number): number {
   return Math.max(0, Math.round(tSeconds * fps));
 }
+
+export interface LabelRequest {
+  id: string;
+  box: number[];
+  width: number;
+}
+
+/** Place labels in priority order beside or inside their boxes without overlapping; a label with no free spot is left out. */
+export function placeLabels(requests: LabelRequest[], labelHeight: number, frameW: number, frameH: number): Map<string, { x: number; y: number }> {
+  const placed = new Map<string, { x: number; y: number }>();
+  const taken: Rect[] = [];
+  const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  for (const { id, box, width } of requests) {
+    const [x0, y0, x1, y1] = box;
+    const spots = [[x0, y0 - labelHeight], [x0, y0], [x0, y1 - labelHeight], [x1 - width, y0 - labelHeight]];
+    for (const [x, y] of spots) {
+      const spot = { x: Math.min(Math.max(0, x), frameW - width), y: Math.min(Math.max(0, y), frameH - labelHeight), width, height: labelHeight };
+      if (taken.some((other) => overlaps(spot, other))) continue;
+      taken.push(spot);
+      placed.set(id, { x: spot.x, y: spot.y });
+      break;
+    }
+  }
+  return placed;
+}

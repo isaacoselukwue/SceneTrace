@@ -238,7 +238,7 @@ function ClipList({ clips, navigate }: { clips: ClipOut[]; navigate: (hash: stri
                   <span className="clip-name" title={c.display_name}>{c.display_name}</span>
                   <span className="clip-meta">
                     {duration(c.duration_ms)} · {c.analyses.length} run{c.analyses.length === 1 ? "" : "s"}
-                    {c.media_kind === "synthetic_render" ? " · synthetic test clip" : ""} · expires {dateTime(c.expires_at)}
+                    {c.media_kind === "synthetic_render" ? " · synthetic test clip" : ""} · <span className="nowrap">expires {dateTime(c.expires_at)}</span>
                   </span>
                 </span>
                 <span className={`badge ${c.status === "ready" ? "tone-ok" : c.status === "rejected" ? "tone-bad" : "tone-neutral"}`}>
