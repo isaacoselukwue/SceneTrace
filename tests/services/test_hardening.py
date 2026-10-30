@@ -82,14 +82,21 @@ def test_crafted_filenames_cannot_reach_the_filesystem(api: Api, tmp_path: Path)
 
 def test_sse_and_jobs_are_owner_scoped(api: Api) -> None:
     clip = _ready_clip(api)
+    job_id = clip["normalise_job_id"]
+    with api.c.app.state.svc.db.write() as conn:
+        conn.execute("UPDATE jobs SET owner_id = 'owner_other' WHERE id = ?", (job_id,))
+    assert api.c.get(f"/api/v1/jobs/{job_id}/events", headers={"Last-Event-ID": "0"}).status_code == 404
+    assert api.c.get(f"/api/v1/jobs/{job_id}").status_code == 404
+    assert api.post(f"/api/v1/jobs/{job_id}/cancel").status_code == 404
+
+
+def test_a_session_for_an_owner_the_server_no_longer_recognises_is_rejected(api: Api) -> None:
     with api.c.app.state.svc.db.write() as conn:
         conn.execute("INSERT INTO sessions(id, owner_id, csrf_token, scope, created_at, expires_at) VALUES"
                      " ('sess_" + "8" * 32 + "', 'owner_other', 'tok', 'owner', 't', '2999-01-01T00:00:00Z')")
     other = TestClient(api.c.app, cookies={"st_session": "sess_" + "8" * 32})
-    job_id = clip["normalise_job_id"]
-    assert other.get(f"/api/v1/jobs/{job_id}/events", headers={"Last-Event-ID": "0"}).status_code == 404
-    assert other.get(f"/api/v1/jobs/{job_id}").status_code == 404
-    assert other.post(f"/api/v1/jobs/{job_id}/cancel", headers={"X-CSRF-Token": "tok"}).status_code == 404
+    assert other.get("/api/v1/clips").status_code == 401
+    assert other.post("/api/v1/clips", headers={"X-CSRF-Token": "tok"}).status_code == 401
 
 
 def test_only_finished_live_runs_can_become_demos(api: Api, tmp_path: Path) -> None:

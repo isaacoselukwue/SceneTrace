@@ -184,18 +184,20 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                           storage=storage_ok, worker=alive, ffmpeg=ff)
 
     @app.post(f"{API}/session", response_model=S.SessionOut)
-    def create_session(body: S.SessionCreate, request: Request, response: Response) -> S.SessionOut:
-        s = sessions.create(body.access_code, request.client.host if request.client else "unknown")
+    def create_session(body: S.SessionCreate, request: Request, response: Response,
+                       current: Session | None = Depends(session)) -> S.SessionOut:
+        s = sessions.create(body.access_code, request.client.host if request.client else "unknown", current)
         response.set_cookie(SESSION_COOKIE, s.id, httponly=True, samesite="strict", secure=settings.public_https, path="/",
                             max_age=12 * 3600)
         return S.SessionOut(scope=cast(Any, s.scope), csrf_token=s.csrf_token, expires_at=s.expires_at,
                             live_uploads_enabled=s.is_owner and settings.live_available and settings.enable_live_uploads)
 
     @app.delete(f"{API}/session", status_code=204)
-    def delete_session(response: Response, s: Session = Depends(mutation)) -> Response:
+    def delete_session(s: Session = Depends(mutation)) -> Response:
         sessions.revoke(s.id)
-        response.delete_cookie(SESSION_COOKIE, path="/")
-        return Response(status_code=204)
+        signed_out = Response(status_code=204)
+        signed_out.delete_cookie(SESSION_COOKIE, path="/", secure=settings.public_https, httponly=True, samesite="strict")
+        return signed_out
 
     @app.get(f"{API}/capabilities", response_model=S.CapabilitiesOut)
     def capabilities(s: Session | None = Depends(session)) -> S.CapabilitiesOut:

@@ -60,8 +60,17 @@ class Sessions:
         self.settings = settings
         self.attempts = RateLimiter(10, 60)
 
-    def create(self, access_code: str | None, client: str) -> Session:
+    def current_owner_id(self) -> str | None:
         configured = self.settings.demo_access_code
+        if configured:
+            return owner_for_code(configured)
+        return "owner_local" if self.settings.bind_host in LOCAL_HOSTS else None
+
+    def create(self, access_code: str | None, client: str, current: Session | None = None) -> Session:
+        configured = self.settings.demo_access_code
+        local_owner = not configured and self.settings.bind_host in LOCAL_HOSTS
+        if access_code is None and current is not None and (current.is_owner or not local_owner):
+            return current
         if configured:
             if access_code is None:
                 return self._insert("public", "public")
@@ -87,6 +96,8 @@ class Sessions:
             return None
         row = self.db.one("SELECT * FROM sessions WHERE id = ? AND revoked_at IS NULL", (session_id,))
         if row is None or row["expires_at"] < utc_now()[:19] + "Z":
+            return None
+        if row["scope"] == "owner" and row["owner_id"] != self.current_owner_id():
             return None
         return Session(id=row["id"], owner_id=row["owner_id"], scope=row["scope"], csrf_token=row["csrf_token"],
                        expires_at=row["expires_at"])

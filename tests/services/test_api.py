@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 from scenetrace.api.app import create_app
 from scenetrace.config import ROOT, Settings
+from scenetrace.security import SESSION_COOKIE
 
 SAMPLE = ROOT / "samples" / "synthetic" / "synthetic_bench_pickup.mp4"
 BOTTLE = [511, 361, 529, 405]
@@ -246,11 +247,40 @@ def test_access_code_sessions(tmp_path: Path) -> None:
         assert client.post("/api/v1/session", json={"access_code": "wrong"}).status_code == 401
         owner = client.post("/api/v1/session", json={"access_code": "correct horse"}).json()
         assert owner["scope"] == "owner" and owner["live_uploads_enabled"] is False
+        reloaded = client.post("/api/v1/session", json={}).json()
+        assert reloaded["scope"] == "owner" and reloaded["csrf_token"] == owner["csrf_token"]
         codes = [client.post("/api/v1/session", json={"access_code": "wrong"}).status_code for _ in range(10)]
         assert 429 in codes
         caps = client.get("/api/v1/capabilities").json()
         assert caps["project_owner"] == "Isaac Oselukwue" and "live" not in caps["available_run_modes"]
         assert "MODEL_API_KEY" not in json.dumps(caps).replace("MODEL_API_KEY missing", "")
+
+
+def test_owner_sessions_end_when_the_access_configuration_changes(tmp_path: Path) -> None:
+    with TestClient(create_app(_settings(tmp_path), start_worker=False)) as client:
+        assert client.post("/api/v1/session", json={}).json()["scope"] == "owner"
+        local_owner_cookie = client.cookies.get(SESSION_COOKIE)
+    with TestClient(create_app(_settings(tmp_path, SCENETRACE_DEMO_ACCESS_CODE="first code"), start_worker=False)) as client:
+        client.cookies.set(SESSION_COOKIE, local_owner_cookie)
+        assert client.get("/api/v1/clips").status_code == 401
+        client.cookies.clear()
+        assert client.post("/api/v1/session", json={"access_code": "first code"}).json()["scope"] == "owner"
+        assert client.post("/api/v1/session", json={}).json()["scope"] == "owner"
+        first_code_cookie = client.cookies.get(SESSION_COOKIE)
+    with TestClient(create_app(_settings(tmp_path, SCENETRACE_DEMO_ACCESS_CODE="second code"), start_worker=False)) as client:
+        client.cookies.set(SESSION_COOKIE, first_code_cookie)
+        assert client.get("/api/v1/clips").status_code == 401
+        assert client.post("/api/v1/session", json={}).json()["scope"] == "public"
+
+
+def test_sign_out_revokes_the_session_and_clears_its_cookie(tmp_path: Path) -> None:
+    with TestClient(create_app(_settings(tmp_path, SCENETRACE_DEMO_ACCESS_CODE="code"), start_worker=False)) as client:
+        owner = client.post("/api/v1/session", json={"access_code": "code"}).json()
+        signed_out = client.delete("/api/v1/session", headers={"X-CSRF-Token": owner["csrf_token"]})
+        assert signed_out.status_code == 204
+        assert signed_out.headers["set-cookie"].startswith(f"{SESSION_COOKIE}=") and "Max-Age=0" in signed_out.headers["set-cookie"]
+        assert client.cookies.get(SESSION_COOKIE) is None
+        assert client.post("/api/v1/session", json={}).json()["scope"] == "public"
 
 
 def test_replay_transport_never_touches_the_network(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
