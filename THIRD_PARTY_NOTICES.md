@@ -1,6 +1,6 @@
 # Third-party notices
 
-SceneTrace is created by Isaac Oselukwue. It uses the components below, which keep their own licences.
+SceneTrace is created by Isaac Oselukwue and released under the MIT License (see LICENSE). It uses the components below, which keep their own licences.
 Versions are the locked versions in `uv.lock` and `client/package-lock.json`.
 
 ## Services

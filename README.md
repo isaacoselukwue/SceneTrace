@@ -160,4 +160,4 @@ Without a separately kept head, a valid result only shows internal consistency.
 
 ## Ownership and licence
 
-Project creator and owner: Isaac Oselukwue. Copyright (c) 2026 Isaac Oselukwue. A licence for this repository has not yet been chosen, so no reuse rights are granted beyond viewing. Third-party components keep their own licences.
+Project creator and owner: Isaac Oselukwue. Copyright (c) 2026 Isaac Oselukwue. Released under the MIT License; see [LICENSE](LICENSE). Third-party components keep their own licences; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

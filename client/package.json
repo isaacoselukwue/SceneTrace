@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "SceneTrace investigation workspace. Created by Isaac Oselukwue.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

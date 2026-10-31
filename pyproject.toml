@@ -3,6 +3,8 @@ name = "scenetrace"
 version = "0.1.0"
 description = "Evidence-backed object histories for short fixed-camera video. Created by Isaac Oselukwue."
 authors = [{ name = "Isaac Oselukwue" }]
+license = "MIT"
+license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
