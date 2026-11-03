@@ -174,16 +174,18 @@ test("cards that share a row share their top and bottom edges", async ({ page },
     return { top: Math.round(Math.min(...boxes.map((box) => box.top))), bottom: Math.round(Math.max(...boxes.map((box) => box.bottom))) };
   });
   await page.goto("/");
+  const sharedEdges = async (first: string, second: string) => JSON.stringify(await edges(first)) === JSON.stringify(await edges(second));
   await expect(page.locator(".upload-area > .clips")).toBeVisible();
-  expect(await edges(".upload-area > .upload")).toEqual(await edges(".upload-area > .clips"));
-  const demoButtons = await page.getByRole("button", { name: "Open recorded run" }).evaluateAll((buttons) => buttons.map((button) => Math.round(button.getBoundingClientRect().top)));
-  expect(new Set(demoButtons).size).toBe(1);
+  await expect.poll(() => sharedEdges(".upload-area > .upload", ".upload-area > .clips")).toBe(true);
+  const demoButtons = page.getByRole("button", { name: "Open recorded run" });
+  await expect(demoButtons).toHaveCount(2);
+  await expect.poll(async () => new Set(await demoButtons.evaluateAll((buttons) => buttons.map((button) => Math.round(button.getBoundingClientRect().top)))).size).toBe(1);
   for (const index of [0, 1]) {
     await page.goto("/");
     await page.getByRole("button", { name: "Open recorded run" }).nth(index).click();
     await expect(page.locator(".answer-card")).toBeVisible();
-    expect(await edges(".area-video > .video-panel")).toEqual(await edges(".area-history > .panel"));
-    expect(await edges(".area-answer > .panel")).toEqual(await edges(".area-integrity > .panel, .area-usage > .panel"));
+    await expect.poll(() => sharedEdges(".area-video > .video-panel", ".area-history > .panel")).toBe(true);
+    await expect.poll(() => sharedEdges(".area-answer > .panel", ".area-integrity > .panel, .area-usage > .panel")).toBe(true);
     const history = page.locator(".area-history .history-scroll");
     expect(await history.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
   }
