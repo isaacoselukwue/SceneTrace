@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from ..config import Settings
 from ..domain import AnswerDraft, Claim
@@ -13,7 +13,14 @@ from ..providers.meta_muse import runtime_prompt
 from ..providers.schemas import StructuredOutputError
 from ..storage import Storage
 from ..store import AnalysisStore
-from .compiler import allowed_unknown_codes, compile_draft, fallback_draft, scope_sentences, sentences_for
+from .compiler import (
+    allowed_unknown_codes,
+    compile_draft,
+    fallback_draft,
+    possible_actor_claims,
+    scope_sentences,
+    sentences_for,
+)
 from .review import run_review
 from .tools import TOOLS, ToolContext, run_tool
 
@@ -123,6 +130,12 @@ def run_investigation(ctx: RunContext, *, providers: ProviderSet, store: Analysi
         compiled = compile_draft(fallback_draft(plan, events, allowed), **common)
         compiled.rejected = rejected + compiled.rejected
         source = "deterministic_fallback"
+    additions = possible_actor_claims(plan, events, compiled.claims) if source == "investigator" else []
+    if additions:
+        earlier_rejections = compiled.rejected
+        compiled = compile_draft(AnswerDraft(claims=[*compiled.claims, *additions], unknown_codes=cast(Any, list(compiled.unknown_codes))),
+                                 **common)
+        compiled.rejected = earlier_rejections + compiled.rejected
     review = run_review(ctx, providers=providers, store=store, storage=storage, analysis_id=analysis_id, owner_id=owner_id,
                         question=question, claims=compiled.claims, enabled=settings.enable_secondary_review)
     if review.mode != "not_run":
@@ -138,6 +151,12 @@ def run_investigation(ctx: RunContext, *, providers: ProviderSet, store: Analysi
         compiled.claims = [c for c in compiled.claims if c.claim_id not in removed]
         if review.needs_evidence and "INSUFFICIENT_VISIBILITY" not in compiled.unknown_codes:
             compiled.unknown_codes.append("INSUFFICIENT_VISIBILITY")
+        compiled.sentences = sentences_for(compiled.claims, compiled.unknown_codes, scope,
+                                           {k: v.record for k, v in store.events_at(analysis_id, snapshot["event_revisions"]).items()})
+    added_and_kept = sorted({c.event_id for c in additions} & {c.event_id for c in compiled.claims})
+    if added_and_kept:
+        scope = [*scope, f"SceneTrace added {', '.join(added_and_kept)}: a possible answer to this question"
+                         " that the investigator did not cite."]
         compiled.sentences = sentences_for(compiled.claims, compiled.unknown_codes, scope,
                                            {k: v.record for k, v in store.events_at(analysis_id, snapshot["event_revisions"]).items()})
     for item in compiled.rejected:

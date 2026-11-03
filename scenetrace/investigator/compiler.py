@@ -39,7 +39,8 @@ def allowed_unknown_codes(plan: Plan, events: dict[str, EventRevision], *, provi
     allowed: set[str] = set()
     relevant = [r for r in relevant_events(plan, events) if r.record.status != "rejected"]
     actions = [r for r in relevant if r.record.event_type in ACTIONS]
-    if plan.intent in ("actor", "history", "interaction_window") and (not actions or any(r.record.actor_id is None for r in actions)):
+    if plan.intent in ("actor", "history", "interaction_window") and (
+            not actions or any(r.record.actor_id is None or r.record.status != "supported" for r in actions)):
         allowed.add("ACTOR_NOT_ESTABLISHED")
     if plan.intent in ("history", "last_seen"):
         allowed.add("CURRENT_LOCATION_UNKNOWN")
@@ -53,6 +54,27 @@ def allowed_unknown_codes(plan: Plan, events: dict[str, EventRevision], *, provi
     if budget_exhausted:
         allowed.add("BUDGET_EXHAUSTED")
     return allowed
+
+
+def possible_actor_claims(plan: Plan, events: dict[str, EventRevision], cited: list[Claim]) -> list[Claim]:
+    if plan.intent not in ("actor", "history"):
+        return []
+    cited_events = {claim.event_id for claim in cited}
+    used_ids = {claim.claim_id for claim in cited}
+    additions: list[Claim] = []
+    for revision in relevant_events(plan, events):
+        record = revision.record
+        if record.status != "plausible" or record.actor_id is None or record.event_id in cited_events:
+            continue
+        number = len(used_ids) + 1
+        while f"C{number}" in used_ids:
+            number += 1
+        used_ids.add(f"C{number}")
+        additions.append(Claim(claim_id=f"C{number}", event_id=record.event_id, event_revision=record.revision,
+                               object_id=record.object_id, predicate=record.event_type, actor_id=record.actor_id,
+                               zone_id=record.zone_id, t_start_ms=record.t_start_ms, t_end_ms=record.t_end_ms,
+                               certainty="possible"))
+    return additions
 
 
 def fallback_draft(plan: Plan, events: dict[str, EventRevision], allowed: set[str]) -> AnswerDraft:

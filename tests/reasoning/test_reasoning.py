@@ -19,7 +19,7 @@ from scenetrace.domain import (
     EvidenceItem,
 )
 from scenetrace.errors import BudgetExceeded
-from scenetrace.investigator.compiler import allowed_unknown_codes, compile_draft
+from scenetrace.investigator.compiler import allowed_unknown_codes, compile_draft, possible_actor_claims
 from scenetrace.investigator.controller import run_investigation
 from scenetrace.investigator.tools import ToolContext, run_tool
 from scenetrace.providers.base import FunctionCall, ModelTurn, ProviderError, ProviderSet, RunContext
@@ -308,6 +308,26 @@ def test_a_lower_case_reviewer_reason_code_is_accepted_in_upper_case(db, setting
     out = _with_review(db, settings, world, LowerCaseReviewer("pass"))
     assert out.review_verdict == "pass"
     assert out.review_findings and {f["reason_code"] for f in out.review_findings} == {"TARGET_OBSERVED_AT_CLAIMED_TIME"}
+
+
+def test_a_possible_actor_is_offered_for_who_questions_without_being_called_established() -> None:
+    from scenetrace.domain import EventRecord, EventRevision
+
+    def revision(event_id: str, kind: str, status: str, actor: str | None) -> EventRevision:
+        record = EventRecord(event_id=event_id, revision=1, object_id="O1", event_type=kind, actor_id=actor, zone_id=None,
+                             t_start_ms=1700, t_end_ms=3600, status=status, evidence_ids=["V1"], reason_codes=[])
+        return EventRevision(record=record, candidate_id=None, basis={}, record_sha256="0" * 64, created_at="t")
+
+    events = {"E2": revision("E2", "pick_up", "rejected", None), "E3": revision("E3", "pick_up", "plausible", "P2")}
+    who = keyword_plan("Who took the spray bottle?", "O1")
+    assert who.intent == "actor"
+    assert "ACTOR_NOT_ESTABLISHED" in allowed_unknown_codes(who, events, provider_failed=False, budget_exhausted=False)
+    added = possible_actor_claims(who, events, [])
+    assert [(c.event_id, c.actor_id, c.certainty) for c in added] == [("E3", "P2", "possible")]
+    history = keyword_plan("What happened to the spray bottle?", "O1")
+    assert history.intent == "history" and [c.event_id for c in possible_actor_claims(history, events, [])] == ["E3"]
+    assert possible_actor_claims(keyword_plan("Where was it last seen?", "O1"), events, []) == []
+    assert possible_actor_claims(who, events, added) == []
 
 
 def test_budget_exhausted_code_only_when_it_happened(db, settings, world) -> None:
