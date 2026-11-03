@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const base = process.env.SCENETRACE_URL ?? "http://127.0.0.1:8765";
-const [outDir, transcriptPath] = process.argv.slice(2);
-const sample = path.resolve("../samples/synthetic/synthetic_bench_pickup.mp4");
+const [outDir, transcriptPath, clipPath] = process.argv.slice(2);
+const clip = path.resolve(clipPath);
 const transcript = JSON.parse(fs.readFileSync(transcriptPath, "utf8"));
 fs.mkdirSync(outDir, { recursive: true });
 
@@ -35,6 +35,7 @@ async function card(html, ms) {
 }
 
 async function caption(text) {
+  markers.push({ caption: text, at: now() });
   await page.evaluate((t) => {
     let el = document.getElementById("demo-caption");
     if (!el) {
@@ -57,8 +58,8 @@ async function open(hash) {
 await card(`<h1>SceneTrace</h1><h2>Follow the object. Check the evidence.</h2>
   <p>Created by <strong>Isaac Oselukwue</strong></p>
   <p>Built on Meta Model API: SAM 3.1, Muse Spark 1.3 and Muse Wonder 1.0</p>
-  <p class="small">A real screen recording of the running application. The clips are drawn test animations made for testing, not real footage.
-  Waiting time during live model calls is shown at 2x speed and labelled.</p>`, 8000);
+  <p class="small">A real screen recording of the running application. The office clip was filmed with my colleagues' permission; the bench clips
+  are drawn test animations. Waiting time during live model calls is shown at 2x speed and labelled.</p>`, 8000);
 await card(`<h2>How it works</h2>
   <p>1. SAM 3.1 tracks the selected object and the people near it.</p>
   <p>2. Changes in the object's motion become candidates. Muse Spark assesses each one from original frames.</p>
@@ -84,75 +85,86 @@ await wait(2000);
 
 await open("#/");
 await caption("The home page lists recorded investigations, which replay stored live runs without new model calls. Uploads stay private to the owner.");
-await wait(5000);
-
-await caption("Upload a short fixed-camera clip. This one is a drawn test animation of a bottle on a park bench.");
-await page.getByRole("button", { name: "Analyse your own clip" }).click();
-await wait(1200);
-await page.getByLabel("Video file").setInputFiles(sample);
-await page.getByLabel(/I own this footage/).check();
-await wait(2000);
-await page.getByRole("button", { name: "Upload" }).click();
-await page.getByRole("heading", { name: "Select the object to follow" }).waitFor({ timeout: 60000 });
-await caption("Describe the object in a few words. SAM 3.1 finds it on the chosen frame; if several things match, you pick one.");
-await wait(1500);
-await page.getByLabel(/Short noun phrase/).pressSequentially("bottle", { delay: 120 });
-await wait(2500);
-await page.getByRole("radio", { name: /Live analysis/ }).check();
-await caption("Live mode calls Meta Model API. Every paid call is reserved against the cost caps before it is sent.");
 await wait(4500);
 
+await caption("A real eight-second clip, filmed in our office with my colleagues' permission: a stain-remover spray bottle on a desk.");
+await page.getByRole("button", { name: "Analyse your own clip" }).click();
+await wait(1200);
+await page.getByLabel("Video file").setInputFiles(clip);
+await page.getByLabel(/I own this footage/).check();
+await wait(1800);
+await page.getByRole("button", { name: "Upload" }).click();
+await page.getByRole("heading", { name: "Select the object to follow" }).waitFor({ timeout: 60000 });
+await page.getByLabel("Frame time").evaluate((input) => {
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, "1000");
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+await caption("Pick a frame where the object is clear and describe it in a few words. SAM 3.1 finds it on that frame.");
+await wait(1500);
+await page.getByLabel(/Short noun phrase/).pressSequentially("spray bottle", { delay: 110 });
+await wait(1500);
+await page.getByRole("radio", { name: /Live analysis/ }).check();
+await caption("Live mode calls Meta Model API. Every paid call is reserved against the cost caps before it is sent.");
+await wait(3500);
+
 await page.getByRole("button", { name: "Analyse this object" }).click();
-markers.push({ start: now(), speed: 2, label: "live analysis" });
-await caption("Live analysis (shown at 2x speed): SAM 3.1 tracks the bottle and people, then Muse Spark assesses each candidate from original frames.");
+const analysisWait = { start: now(), speed: 2, label: "live analysis" };
+markers.push(analysisWait);
+await caption("Live analysis (shown at 2x speed): SAM 3.1 tracks the bottle and the people, then Muse Spark checks each candidate against the original frames.");
 await page.locator(".event-list li").first().waitFor({ timeout: 240000 });
 await page.locator(".answer").waitFor({ timeout: 240000 });
-markers[markers.length - 1].end = now();
+analysisWait.end = now();
 const analysisUrl = page.url();
 
-await caption("The history: the person walking past is a rejected candidate, and the visible lift is a supported pick-up by P2.");
-await wait(6000);
-await page.locator(".event.status-rejected summary").click();
-await caption("Why was the pass-by not counted? The bottle stayed where it was. Closeness is not evidence of contact.");
-await wait(6000);
-await page.locator("video").evaluate((v) => { v.currentTime = 13.8; });
-await caption("Overlays show only observed tracks: the bottle's SAM mask and box, and P2's box. The timeline marks when the bottle was observed.");
+await page.locator(".event.status-rejected summary").first().click();
+await caption("I walked past first and the bottle stayed put, so that candidate is not supported: being close is not touching.");
+await wait(6500);
+await page.locator(".event.status-plausible summary").first().click();
+await page.locator(".event.status-plausible").first().evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
+await caption("Then the bottle vanished behind us. The lift is hidden, but the bottle was next seen moving with P2 and no one else, so this is a possible pick-up by P2, never a supported one.");
+await wait(8500);
+await page.locator("video").evaluate((v) => { v.currentTime = 3.5; });
+await page.locator(".stage").evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
+await caption("The overlays show only what SAM tracked: here, at 3.5 seconds, the bottle beside P2 as they walk away.");
 await wait(6000);
 
 await page.locator(".composer").evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
 await wait(900);
-await page.locator("#question").fill("Who picked up the bottle?");
+await page.locator("#question").fill("Who took the spray bottle?");
 await wait(1200);
 await page.getByRole("button", { name: "Investigate" }).click();
-markers.push({ start: now(), speed: 2, label: "live question" });
-await caption("Live question (shown at 2x speed): the investigator reads stored history and may only submit structured claims.");
+const questionWait = { start: now(), speed: 2, label: "live question" };
+markers.push(questionWait);
+await caption("Live question (shown at 2x speed): the investigator reads the stored history and may only submit structured claims.");
 await page.locator(".answer-card .citation").first().waitFor({ timeout: 180000 });
-markers[markers.length - 1].end = now();
+questionWait.end = now();
 await page.locator(".answer-card").first().evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
-await caption("The server validated the claim and wrote the sentence. With review switched on, Muse Wonder checked it against the frames in a fresh context.");
-await wait(6000);
-await page.locator(".answer-card .citation").first().click();
-await caption("Each citation opens the evidence: original frames before, during and after, with source frame, timestamp and digest.");
-await wait(6500);
+await caption("The server checked every claim and wrote the sentences: P2 possibly picked it up, and the footage does not establish who did.");
+await wait(8000);
+await page.locator(".answer-card .citation", { hasText: "E3" }).first().click();
+await page.locator(".drawer figure img").first().waitFor();
+await caption("Each citation opens its evidence: the original frames before, during and after the hidden change, with frame numbers and digests.");
+await wait(3500);
+await page.locator(".drawer figure").nth(2).evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
+await wait(3500);
 await page.keyboard.press("Escape");
 
 const demos = await page.evaluate(async () => (await (await fetch("/api/v1/demos")).json()));
+const pickup = demos.find((d) => d.title === "Bench pickup and pass-by");
 const hidden = demos.find((d) => d.title === "Hidden removal");
+await open(`#/analysis/${pickup.analysis_id}`);
+await page.locator("video").evaluate((v) => { v.currentTime = 13.8; });
+await caption("For contrast, a recorded run on a drawn test clip: when the lift is on camera, the pick-up by P2 is supported.");
+await wait(6500);
 await open(`#/analysis/${hidden.analysis_id}`);
-await caption("A recorded real run: the bottle disappears while someone stands in front of it. The removal itself is never visible.");
-await wait(6000);
 await page.locator(".event.status-plausible summary").first().click();
-await page.locator("video").evaluate((v) => { v.currentTime = 9.0; });
-await caption("So the pick-up stays only possible, with no actor named, and frames without a detection say 'not detected', never 'gone'.");
-await wait(7000);
-await page.locator(".answer-card").first().evaluate((el) => el.scrollIntoView({ block: "center" }));
-await caption("Asked 'Who took the bottle?', SceneTrace answers that the evidence does not establish an actor.");
+await caption("And when an object simply vanishes behind someone and is never seen again, SceneTrace names no one.");
 await wait(6000);
 await page.getByRole("button", { name: /Where was the bottle last seen/ }).click();
 await page.locator(".answer-card .blocked summary").click();
 await page.locator(".answer-card").evaluate((el) => el.scrollIntoView({ block: "center" }));
-await caption("A real failure in this run: Muse Wonder asked for more evidence on the last sighting, so a supported claim was withheld. Review can block a claim, never promote one.");
-await wait(8000);
+await caption("Here Muse Wonder reviewed the answer against the frames and withheld a claim it could not verify. Review can block a claim, never promote one.");
+await wait(7500);
 
 await page.goto(analysisUrl);
 await page.waitForLoadState("networkidle");
@@ -167,7 +179,7 @@ await page.locator("#expected").fill("0".repeat(64));
 await page.locator(".verify-own button").click();
 await page.locator(".verify-result.failed").waitFor();
 await page.locator(".verify-result").evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
-await caption("Checked against a different head, verification fails. Integrity is not proof that the video or its interpretation is true.");
+await caption("Checked against a different head, verification fails. Integrity shows the evidence is unchanged, not that the interpretation is true.");
 await wait(5500);
 
 await card(`<h2>Measured so far</h2>
@@ -181,7 +193,7 @@ await card(`<h2>Measured so far</h2>
   </table>
   <p class="small">Drawn test clips are smoke checks, not benchmarks. Live runs: cold analysis median 33 s and about USD 0.09; questions median 18 s.
   The token count endpoint leaves out video tokens (384 counted, 5,311 billed), so video reservations add 600 tokens per second.</p>
-  <p><strong>SceneTrace</strong>, created by Isaac Oselukwue</p>`, 16000);
+  <p><strong>SceneTrace</strong>, created by Isaac Oselukwue. github.com/isaacoselukwue/SceneTrace</p>`, 16000);
 
 markers.push({ total: now() });
 await context.close();
