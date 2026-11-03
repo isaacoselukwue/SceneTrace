@@ -128,6 +128,23 @@ def test_disappearance_during_unknown_coverage_is_never_supported() -> None:
     assert record.status == "plausible" and record.actor_id is None
 
 
+def test_disappearance_after_a_brief_resighting_near_people_is_a_possible_pick_up() -> None:
+    target = {f: TARGET for f in range(18)} | {35: _shift(TARGET, -4, 8), 36: _shift(TARGET, -10, 12)}
+    passer = {f: _person_at(509) for f in range(10, 45)}
+    obs = _obs("O1", target) + _obs("P1", passer)
+    lost = [c for c in _interactions(_candidates(obs)) if "TARGET_LOST" in c.reason_codes]
+    assert len(lost) == 1 and lost[0].t_start_ms == 3600 and lost[0].actor_candidates == ["P1"]
+    record = _promote(lost[0], obs, _assessment(lost[0], actor="P1"))
+    assert (record.status, record.actor_id) == ("plausible", None)
+
+
+def test_an_object_moving_from_the_start_is_not_reported_as_lost() -> None:
+    target = {f: _shift(TARGET, f * 6, 0) for f in range(12)}
+    carrier = {f: _person_at(509 + f * 6) for f in range(30)}
+    obs = _obs("O1", target) + _obs("P1", carrier)
+    assert not [c for c in _interactions(_candidates(obs)) if "TARGET_LOST" in c.reason_codes]
+
+
 def test_occluded_disappearance_without_return_is_plausible_and_unattributed() -> None:
     target = {f: TARGET for f in range(55)}
     blocker = {f: _person_at(509) for f in range(40, 110)}

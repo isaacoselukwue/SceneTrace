@@ -171,7 +171,10 @@ def _drafts(track: TargetTrack, zones: list[Zone], config: EngineConfig) -> list
                 changes = trigger_at is not None or (at_segment_end and not returns_here)
                 drafts.extend(_pass_bys(track, seg[run.start:run.end + 1], changes, config))
     final_runs = all_runs[-1]
-    if final_runs and final_runs[-1].end == len(segments[-1]) - 1 and not carried and last.t_ms < track.last_t:
+    rests_at_end = bool(final_runs) and final_runs[-1].end == len(segments[-1]) - 1
+    rested_before_brief_sighting = (not final_runs and len(segments) > 1 and bool(all_runs[-2])
+                                    and all_runs[-2][-1].end == len(segments[-2]) - 1)
+    if (rests_at_end or rested_before_brief_sighting) and not carried and last.t_ms < track.last_t:
         tail_end = min(track.last_t, last.t_ms + config.evidence_half_window_ms)
         if track.actors_near(last.t_ms - 1000, tail_end, last.box):
             drafts.append(_lost_draft(track, last, tail_end))
