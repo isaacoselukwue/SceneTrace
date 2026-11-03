@@ -298,6 +298,18 @@ def test_prose_in_a_reviewer_reason_code_invalidates_the_review(db, settings, wo
     assert out.review_verdict == "unavailable" and out.review_findings == []
 
 
+def test_a_lower_case_reviewer_reason_code_is_accepted_in_upper_case(db, settings, world) -> None:
+    class LowerCaseReviewer(RejectingReviewer):
+        def review(self, ctx, **kw):
+            audit = super().review(ctx, **kw)
+            return audit.model_copy(update={"findings": [f.model_copy(update={"reason_code": "target_observed_at_claimed_time"})
+                                                         for f in audit.findings]})
+
+    out = _with_review(db, settings, world, LowerCaseReviewer("pass"))
+    assert out.review_verdict == "pass"
+    assert out.review_findings and {f["reason_code"] for f in out.review_findings} == {"TARGET_OBSERVED_AT_CLAIMED_TIME"}
+
+
 def test_budget_exhausted_code_only_when_it_happened(db, settings, world) -> None:
     store, storage = world
     out = run_investigation(_ctx(db, settings), providers=_providers(ScriptedModel([], plan_error=BudgetExceeded("COST_LIMIT_RUN"))),

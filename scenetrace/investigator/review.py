@@ -12,7 +12,7 @@ from ..providers.schemas import StructuredOutputError
 from ..storage import Storage
 from ..store import AnalysisStore
 
-REASON_CODE = re.compile(r"[A-Z][A-Z0-9_]{0,63}")
+REASON_CODE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,63}")
 
 
 @dataclass
@@ -54,8 +54,9 @@ def run_review(ctx: RunContext, *, providers: ProviderSet, store: AnalysisStore,
     if any(f.claim_id not in claim_ids or not set(f.evidence_ids) <= shown or not REASON_CODE.fullmatch(f.reason_code)
            for f in audit.findings):
         return ReviewOutcome(mode=mode, verdict="unavailable")
-    by_claim = {f.claim_id: f for f in audit.findings}
-    outcome = ReviewOutcome(mode=mode, findings=[f.model_dump() for f in audit.findings])
+    findings = [f.model_copy(update={"reason_code": f.reason_code.upper()}) for f in audit.findings]
+    by_claim = {f.claim_id: f for f in findings}
+    outcome = ReviewOutcome(mode=mode, findings=[f.model_dump() for f in findings])
     for claim_id in claim_ids:
         finding = by_claim.get(claim_id)
         if finding is None or finding.verdict == "needs_evidence":
