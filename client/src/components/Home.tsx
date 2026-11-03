@@ -15,6 +15,7 @@ export function Home({ session, capabilities, onSession, navigate }: {
   const [demos, setDemos] = useState<DemoOut[]>([]);
   const [clips, setClips] = useState<ClipOut[]>([]);
   const owner = session?.scope === "owner";
+  const readOnly = capabilities?.demo_read_only ?? false;
   useEffect(() => { api.demos().then(setDemos).catch(() => setDemos([])); }, []);
   useEffect(() => { if (owner) api.clips().then(setClips).catch(() => setClips([])); }, [owner]);
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -31,9 +32,11 @@ export function Home({ session, capabilities, onSession, navigate }: {
           </p>
           <div className="hero-actions">
             {demos.length > 0 && <button type="button" onClick={() => scrollTo("demos")}>Explore a recorded run</button>}
-            <button type="button" className="secondary" onClick={() => scrollTo("upload")}>
-              {owner ? "Analyse your own clip" : "Owner sign-in"}
-            </button>
+            {!readOnly && (
+              <button type="button" className="secondary" onClick={() => scrollTo("upload")}>
+                {owner ? "Analyse your own clip" : "Owner sign-in"}
+              </button>
+            )}
           </div>
           <ul className="hero-points">
             <li><Icon name="check" size={16} /> Every statement cites original frames</li>
@@ -66,9 +69,10 @@ export function Home({ session, capabilities, onSession, navigate }: {
       )}
 
       <section id="upload" className="section upload-area" aria-label="Your footage">
-        {!owner ? <AccessForm onSession={onSession} />
-          : <UploadPanel capabilities={capabilities} onUploaded={(c) => navigate(`#/clip/${c.clip_id}`)} />}
-        {owner && <ClipList clips={clips} navigate={navigate} />}
+        {readOnly ? <RecordedRunsOnly />
+          : !owner ? <AccessForm onSession={onSession} />
+            : <UploadPanel capabilities={capabilities} onUploaded={(c) => navigate(`#/clip/${c.clip_id}`)} />}
+        {owner && !readOnly && <ClipList clips={clips} navigate={navigate} />}
       </section>
     </main>
   );
@@ -140,6 +144,15 @@ function DemoCard({ demo, onOpen }: { demo: DemoOut; onOpen: () => void }) {
         <button type="button" onClick={onOpen}>Open recorded run</button>
       </div>
     </article>
+  );
+}
+
+function RecordedRunsOnly() {
+  return (
+    <section className="panel recorded-only" aria-labelledby="recorded-only-title">
+      <PanelHead icon="info" titleId="recorded-only-title" title="Recorded runs only"
+        description="This server replays the recorded investigations above without model calls, so uploads are switched off. To analyse your own clip, start SceneTrace without the read-only demo mode, as the README describes." />
+    </section>
   );
 }
 

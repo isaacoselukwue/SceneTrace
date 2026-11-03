@@ -224,6 +224,7 @@ main { max-width: var(--max); margin: 0 auto; padding: 28px 24px 0; }
 .demo-body > button { margin-top: auto; align-self: flex-start; }
 .upload-area { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
 .upload-area .panel { margin-bottom: 0; display: flex; flex-direction: column; }
+.upload-area .recorded-only { grid-column: 1 / -1; }
 .upload-area .access { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); align-items: center; gap: 12px 32px; }
 .access .panel-head { margin: 0; }
 .access .error { grid-column: 1 / -1; margin: 0; }

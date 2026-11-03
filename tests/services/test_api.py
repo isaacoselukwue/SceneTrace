@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import dataclasses
+import io
 import json
 import shutil
 import threading
 import time
+import zipfile
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from scenetrace.api.app import create_app
+from scenetrace.cli import main as cli_main
 from scenetrace.config import ROOT, Settings
 from scenetrace.security import SESSION_COOKIE
 
@@ -60,7 +63,7 @@ def _ready_clip(api: Api) -> dict:
     return api.c.get(f"/api/v1/clips/{body['clip_id']}").json()
 
 
-def test_full_fixture_flow_upload_to_cited_answer_and_sealed_export(api: Api) -> None:
+def test_full_fixture_flow_upload_to_cited_answer_and_sealed_export(api: Api, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     clip = _ready_clip(api)
     assert clip["media_kind"] == "synthetic_render" and (clip["proxy_width"], clip["proxy_frame_count"]) == (960, 200)
     accepted = api.post(f"/api/v1/clips/{clip['clip_id']}/analyses", json={
@@ -103,6 +106,13 @@ def test_full_fixture_flow_upload_to_cited_answer_and_sealed_export(api: Api) ->
     assert tampered["integrity"] == "failed" and any(e.startswith("FILE_HASH_MISMATCH") for e in tampered["errors"])
     zipped = api.c.get(export["download_url"])
     assert zipped.status_code == 200 and zipped.content[:2] == b"PK"
+    extracted = tmp_path / "extracted"
+    with zipfile.ZipFile(io.BytesIO(zipped.content)) as archive:
+        archive.extractall(extracted)
+    assert cli_main(["verify", str(extracted), "--expected-head", export["head_digest"]]) == 0
+    assert json.loads(capsys.readouterr().out)["integrity"] == "valid"
+    assert cli_main(["verify", str(extracted), "--expected-head", "0" * 64]) == 1
+    assert "TRUST_ANCHOR_MISMATCH" in json.loads(capsys.readouterr().out)["errors"]
 
 
 def test_range_requests_on_video(api: Api) -> None:

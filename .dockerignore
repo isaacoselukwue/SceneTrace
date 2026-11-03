@@ -4,7 +4,6 @@
 !.env.example
 .venv
 .local
-.claude
 client/node_modules
 client/dist
 client/test-results

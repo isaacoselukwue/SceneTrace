@@ -7,6 +7,15 @@ import sys
 from pathlib import Path
 
 
+def bundle_root(extracted: Path) -> Path:
+    if (extracted / "manifest.json").exists() or not extracted.is_dir():
+        return extracted
+    entries = [entry for entry in extracted.iterdir() if not entry.name.startswith(".")]
+    if len(entries) == 1 and entries[0].is_dir() and (entries[0] / "manifest.json").exists():
+        return entries[0]
+    return extracted
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="scenetrace", description="SceneTrace, created by Isaac Oselukwue.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -28,6 +37,11 @@ def main(argv: list[str] | None = None) -> int:
     imp = sub.add_parser("import-demos", help="Import approved recorded demonstrations into the data directory")
     imp.add_argument("source", type=Path, nargs="?", default=Path("demos"))
     args = parser.parse_args(argv)
+    if args.command == "verify":
+        from reference_core.integrity import verify_bundle
+        result = verify_bundle(bundle_root(args.bundle), args.expected_head)
+        print(json.dumps(result, indent=2))
+        return 0 if result["integrity"] == "valid" else 1
 
     from .config import Settings
     settings = Settings.load()
@@ -43,11 +57,6 @@ def main(argv: list[str] | None = None) -> int:
         uvicorn.run(create_app(Settings.load(env={"SCENETRACE_HOST": host})), host=host, port=args.port, workers=1,
                     log_level="warning", proxy_headers=False)
         return 0
-    if args.command == "verify":
-        from reference_core.integrity import verify_bundle
-        result = verify_bundle(args.bundle, args.expected_head)
-        print(json.dumps(result, indent=2))
-        return 0 if result["integrity"] == "valid" else 1
     from .demos import import_demos, publish_demo
     from .jobs.context import Services
     svc = Services.create(settings)

@@ -31,7 +31,9 @@ Versions are the locked versions in `uv.lock` and `client/package-lock.json`.
 
 The two typefaces are bundled into the built client as WOFF2 files; their licence texts ship in the npm packages.
 
-Development tools: @playwright/test 1.64.1, @types/node 22.20.5, @types/react 19.3.0, @types/react-dom 19.3.0, @vitejs/plugin-react 6.1.2, jsdom 30.1.3, openapi-typescript 7.13.0, typescript 5.9.3, vite 8.3.5, vitest 5.0.5.
+Python development tools: pytest 9.2.0 (MIT), Ruff 0.17.3 (MIT), Pyrefly 1.4.0 (MIT, Meta Platforms, Inc.) and uv (MIT or Apache 2.0).
+
+Client development tools: @playwright/test 1.64.1, @types/node 22.20.5, @types/react 19.3.0, @types/react-dom 19.3.0, @vitejs/plugin-react 6.1.2, jsdom 30.1.3, openapi-typescript 7.13.0, typescript 5.9.3, vite 8.3.5, vitest 5.0.5.
 
 ## Tools
 

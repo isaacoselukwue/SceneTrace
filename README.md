@@ -14,6 +14,15 @@ It is built on Meta Model API: **SAM 3.1** segments and tracks the object and th
 
 [Watch the demonstration (2 min 50 s, docs/media/scenetrace-demo.mp4)](docs/media/scenetrace-demo.mp4). It is a screen recording of the running application: a live analysis and a live question against Meta Model API, a recorded run in which the reviewer withheld a supported claim, and the integrity check. Waiting time during the two live calls is shown at 2x speed and labelled on screen. The clips are drawn test animations, not real footage.
 
+## Quick start
+
+```bash
+make bootstrap   # needs Python 3.12 with uv, Node.js 22.22 or later and FFmpeg
+make demo        # open http://127.0.0.1:8765: recorded runs, no key and no model calls
+```
+
+To run the whole flow on a clip of your own, with or without a key, see [Run it](#run-it).
+
 | | |
 | --- | --- |
 | ![Evidence drawer with original frames](docs/media/evidence-drawer-desktop.png) | ![Hidden removal answered with no actor](docs/media/occlusion-desktop.png) |
@@ -93,22 +102,28 @@ The reviewer misses changes it cannot see (one-second time shifts, superseded re
 
 ## Run it
 
-Prerequisites: Python 3.12 with [uv](https://docs.astral.sh/uv/), Node.js 22, FFmpeg on `PATH`, and Google Chrome for the browser tests.
+Prerequisites: Python 3.12 with [uv](https://docs.astral.sh/uv/), Node.js 22.22 or later, FFmpeg on `PATH`, and Google Chrome for the browser tests.
+
+Recorded runs, read-only, with no key and no model calls:
 
 ```bash
 make bootstrap          # locked Python and client dependencies
-make demo               # recorded runs at http://127.0.0.1:8765, no key and no model calls
+make demo               # http://127.0.0.1:8765
 ```
 
-Live analysis spends money on Meta Model API within the configured caps (USD 1.50 per analysis, 0.25 per question, 20 per day by default):
+The full flow on a clip of your own (upload, select, analyse, ask, open the evidence, seal and verify):
 
 ```bash
-cp .env.example .env    # set MODEL_API_KEY and SCENETRACE_ENABLE_LIVE_UPLOADS=true
+cp .env.example .env
 cd client && npm run build && cd ..
 .venv/bin/python -m scenetrace serve          # http://127.0.0.1:8765
 ```
 
-Other commands: `make dev` (API plus Vite dev server), `make test`, `make test-ui`, `make test-live` (opt-in, spends money), `make evaluate`, `make check` (lint, types, tests, schema drift, secret scan) and `make build`. With Docker, `docker compose up --build` runs one process with a persistent volume and imports the recorded runs.
+Without a key, choose **Development fixture** when you analyse: deterministic code stands in for the models, and every page that shows its results says so. To try it, upload `samples/synthetic/synthetic_bench_pickup.mp4`, draw a box round the bottle, ask "Who picked it up?", open the citation, then create and verify a sealed export on the Integrity tab.
+
+For **Live analysis**, set `MODEL_API_KEY` and `SCENETRACE_ENABLE_LIVE_UPLOADS=true` in `.env` before starting the server. It spends money on Meta Model API within the configured caps (USD 1.50 per analysis, 0.25 per question, 20 per day by default). Add `SCENETRACE_ENABLE_SECONDARY_REVIEW=true` to have Muse Wonder review each answer against the frames.
+
+Other commands: `make dev` (API plus Vite dev server), `make test`, `make test-ui`, `make test-live` (opt-in, spends money), `make evaluate`, `make check` (lint, types, tests, schema drift, secret scan) and `make build`. With Docker, `docker compose up --build` runs one process with a persistent volume, imports the recorded runs and serves them at http://127.0.0.1:8765. To upload from the container, set `SCENETRACE_DEMO_ACCESS_CODE` in `.env` before starting it, then sign in with that code.
 
 Access: a server listening on 127.0.0.1 with no access code treats every local browser as the owner. A server reachable from other machines, such as the Docker container, shows the recorded runs to everyone and accepts uploads and questions only from an owner who signs in with the code set in `SCENETRACE_DEMO_ACCESS_CODE`. The owner stays signed in across reloads for 12 hours. Changing the code signs every owner out, and clips uploaded under the previous code are no longer listed.
 
@@ -144,16 +159,17 @@ Cold analysis runs once per selected object: normalise, resolve the target, trac
 
 ## Built during the hackathon
 
-Everything in this repository was created for the Meta Global AI Developer Hackathon, between 28 and 29 October 2026: the ingestion and frame mapping, SAM and Muse adapters, candidate engine, investigator, claim compiler, ledger, API, worker, client, exports, replay, evaluation harness, tests, synthetic test clips and recorded runs. The commit history records the build.
+Everything in this repository was created for the Meta Global AI Developer Hackathon, within its 26 October to 4 November 2026 build window. Work began on 28 October with a design pack: reference implementations of the claim, budget and integrity checks (`reference_core/`, `reference_tests/`), the JSON contracts (`contracts/`), configuration (`config/`) and the runtime prompts (`prompts/runtime/`). From 29 October the application was built on top of it: the ingestion and frame mapping, SAM and Muse adapters, candidate engine, investigator, claim compiler, ledger, API, worker, client, exports, replay, evaluation harness, tests, synthetic test clips and recorded runs. The commit history records the build.
 
-**Used, not built:** Meta Model API with SAM 3.1, Muse Spark 1.3 and Muse Wonder 1.0; Meta's `meta-sam-parser` (SAM License); React (MIT); FastAPI, Starlette, Pydantic, HTTPX, Uvicorn, NumPy, Pillow, jsonschema, python-multipart; Vite, Vitest, Playwright, openapi-typescript; FFmpeg. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+**Used, not built:** Meta Model API with SAM 3.1, Muse Spark 1.3 and Muse Wonder 1.0; Meta's `meta-sam-parser` (SAM License); React (MIT); FastAPI, Starlette, Pydantic, HTTPX, Uvicorn, NumPy, Pillow, jsonschema, python-multipart; Vite, Vitest, Playwright, openapi-typescript; the Inter and JetBrains Mono typefaces (SIL Open Font License); pytest, Ruff, Meta's Pyrefly type checker and uv; FFmpeg; the official Python and Node.js Docker base images. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Integrity
 
 Download a sealed export, extract it into a new empty directory, and verify it against the head you recorded separately when it was created:
 
 ```bash
-.venv/bin/python -m scenetrace verify <extracted-bundle> --expected-head <64-hex-digest>
+unzip scenetrace-exp_<id>.zip -d bundle
+.venv/bin/python -m scenetrace verify bundle --expected-head <64-hex-digest>
 ```
 
 Without a separately kept head, a valid result only shows internal consistency.
