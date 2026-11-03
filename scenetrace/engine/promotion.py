@@ -38,6 +38,8 @@ def promote(*, candidate: Candidate, assessment: AssessmentResult | None, observ
     elif hidden:
         status, rule = ("rejected", "VISIBLE_CONTRADICTION") if verdict == "contradicts" and not moved and "TARGET_LOST" not in codes \
             else ("plausible", "TRANSITION_NOT_VISIBLE")
+        if "TARGET_LOST" in codes:
+            codes -= {"STABLE_AFTER", "TARGET_UNCHANGED"}
         carrier = candidate.actor_candidates[0] if "MOVED_WITH_ACTOR" in codes and len(candidate.actor_candidates) == 1 else None
         named = assessment.actor_assignment if assessment else None
         if status == "plausible" and carrier is not None and named in (None, carrier):

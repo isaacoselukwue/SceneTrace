@@ -40,7 +40,7 @@ A model that watches a video will happily say who took something. SceneTrace is 
 
 - **Geometry proposes, evidence decides.** Tracks generate candidate moments; Muse Spark assesses each one from six original frames (two before, two during, two after); deterministic rules decide the status. A person walking past a bottle is stored as a *rejected* candidate, and the interface shows why.
 - **No model prose reaches the answer.** The investigator can only submit structured claims. The server checks every claim against the exact stored event revision (object, action, actor, time, zone, certainty), checks that the evidence bytes still match their digests, and then writes the sentence itself.
-- **Unknown stays unknown.** A missing detection is "not detected", not "absent". A removal hidden behind a person becomes a *possible* event with no actor, never a confident accusation.
+- **Unknown stays unknown.** A missing detection is "not detected", not "absent". A removal hidden behind a person becomes a *possible* event, never a confident accusation. It names a possible actor only when the object is next seen moving with exactly one person and no one else is close; otherwise it names no one.
 - **Every paid call is reserved first.** A durable ledger reserves the worst-case cost of each SAM and Muse call (image token counts are measured before dispatch) and records provider-reported usage afterwards.
 - **Evidence can be sealed and checked.** An export is a content-addressed bundle whose expected head is kept outside the bundle, so a byte change or a coherent rewrite is detected.
 
