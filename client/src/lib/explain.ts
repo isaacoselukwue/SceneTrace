@@ -9,6 +9,7 @@ const REASONS: Record<string, string> = {
   STABLE_AFTER: "The object is steady in the frames after this moment.",
   POSSIBLE_OCCLUSION: "The object was hidden when the change may have happened.",
   TARGET_LOST: "The object was not detected again after it was hidden.",
+  MOVED_WITH_ACTOR: "After it was hidden, the object was next seen moving with this person and no one else. The lift itself was not visible.",
   NO_VISIBLE_TRANSITION: "The footage does not show the object being lifted or released.",
   INCOMPLETE_COVERAGE: "Part of this window was not analysed, so it is unknown rather than empty.",
   COMPETING_ACTORS: "More than one person was equally close, so no single person can be named.",

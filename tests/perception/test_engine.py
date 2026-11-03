@@ -138,6 +138,34 @@ def test_disappearance_after_a_brief_resighting_near_people_is_a_possible_pick_u
     assert (record.status, record.actor_id) == ("plausible", None)
 
 
+def _carried_off_after_a_hidden_change(second_carrier: bool = False) -> list[Observation]:
+    target = {f: TARGET for f in range(18)} | {35: _shift(TARGET, -20, 0), 36: _shift(TARGET, -40, 0)}
+    passer = {f: _person_at(509) for f in range(5, 20)} | {f: _person_at(800) for f in range(20, 41)}
+    taker = {f: _person_at(509) for f in range(20, 35)} | {35: _person_at(489), 36: _person_at(469), 37: _person_at(449)}
+    if second_carrier:
+        passer |= {35: _person_at(489), 36: _person_at(469)}
+    return _obs("O1", target) + _obs("P1", passer) + _obs("P2", taker)
+
+
+def test_an_object_next_seen_moving_with_one_person_is_a_possible_pick_up_by_that_person() -> None:
+    obs = _carried_off_after_a_hidden_change()
+    lost = [c for c in _interactions(_candidates(obs)) if "TARGET_LOST" in c.reason_codes]
+    assert len(lost) == 1 and lost[0].actor_candidates == ["P2"] and "MOVED_WITH_ACTOR" in lost[0].reason_codes
+    assert (lost[0].t_start_ms, lost[0].t_end_ms) == (1700, 3600)
+    record = _promote(lost[0], obs, _assessment(lost[0]))
+    assert (record.status, record.actor_id) == ("plausible", "P2") and "ACTOR_NOT_ESTABLISHED" not in record.reason_codes
+    named_elsewhere = _promote(lost[0], obs, _assessment(lost[0], actor="P1"))
+    assert (named_elsewhere.status, named_elsewhere.actor_id) == ("plausible", None)
+
+
+def test_an_object_next_seen_with_two_people_names_no_one() -> None:
+    obs = _carried_off_after_a_hidden_change(second_carrier=True)
+    lost = [c for c in _interactions(_candidates(obs)) if "TARGET_LOST" in c.reason_codes]
+    assert len(lost) == 1 and "MOVED_WITH_ACTOR" not in lost[0].reason_codes
+    record = _promote(lost[0], obs, _assessment(lost[0]))
+    assert (record.status, record.actor_id) == ("plausible", None) and "ACTOR_NOT_ESTABLISHED" in record.reason_codes
+
+
 def test_an_object_moving_from_the_start_is_not_reported_as_lost() -> None:
     target = {f: _shift(TARGET, f * 6, 0) for f in range(12)}
     carrier = {f: _person_at(509 + f * 6) for f in range(30)}

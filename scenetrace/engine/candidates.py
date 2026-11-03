@@ -176,11 +176,38 @@ def _drafts(track: TargetTrack, zones: list[Zone], config: EngineConfig) -> list
                                     and all_runs[-2][-1].end == len(segments[-2]) - 1)
     if (rests_at_end or rested_before_brief_sighting) and not carried and last.t_ms < track.last_t:
         tail_end = min(track.last_t, last.t_ms + config.evidence_half_window_ms)
-        if track.actors_near(last.t_ms - 1000, tail_end, last.box):
+        carrier = _moving_with(track, segments[-1], all_runs[-2][-1].anchor, config) if rested_before_brief_sighting else None
+        if carrier is not None:
+            drafts.append(Draft("pick_up", segments[-2][-1].t_ms, last.t_ms, [carrier],
+                                ["POSSIBLE_OCCLUSION", "TARGET_LOST", "MOVED_WITH_ACTOR"]))
+        elif track.actors_near(last.t_ms - 1000, tail_end, last.box):
             drafts.append(_lost_draft(track, last, tail_end))
     drafts.append(Draft("last_seen", last.t_ms, last.t_ms,
                         codes=["PARTIAL_SCOPE"] if any(s == "unknown" for s in track.state.values()) else []))
     return drafts
+
+
+def _moving_with(track: TargetTrack, sightings: list[Sample], resting_anchor: tuple[float, float], config: EngineConfig) -> str | None:
+    still_limit = track.scale * config.stationary_displacement_bp / 10_000
+    if len(sightings) < 2 or distance(sightings[-1].centre, resting_anchor) <= still_limit:
+        return None
+    object_dx = sightings[-1].centre[0] - sightings[0].centre[0]
+    object_dy = sightings[-1].centre[1] - sightings[0].centre[1]
+    margin = config.association_margin_bp / 10_000
+    touching, nearby = [], []
+    for person, boxes in track.people.items():
+        person_boxes = [boxes.get(s.frame) for s in sightings]
+        gaps = [None if box is None else edge_distance(s.box, box) / track.scale for s, box in zip(sightings, person_boxes, strict=True)]
+        first, last = person_boxes[0], person_boxes[-1]
+        if first is not None and last is not None and all(gap == 0 for gap in gaps):
+            person_dx = (last[0] + last[2] - first[0] - first[2]) / 2
+            person_dy = (last[1] + last[3] - first[1] - first[3]) / 2
+            if object_dx * person_dx + object_dy * person_dy > 0:
+                touching.append(person)
+                continue
+        if any(gap is not None and gap <= margin for gap in gaps):
+            nearby.append(person)
+    return touching[0] if len(touching) == 1 and not nearby else None
 
 
 def _lost_draft(track: TargetTrack, last_seen: Sample, t_end: int) -> Draft:

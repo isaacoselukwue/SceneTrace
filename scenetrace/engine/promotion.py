@@ -38,7 +38,14 @@ def promote(*, candidate: Candidate, assessment: AssessmentResult | None, observ
     elif hidden:
         status, rule = ("rejected", "VISIBLE_CONTRADICTION") if verdict == "contradicts" and not moved and "TARGET_LOST" not in codes \
             else ("plausible", "TRANSITION_NOT_VISIBLE")
-        codes.update({"NO_VISIBLE_TRANSITION", "ACTOR_NOT_ESTABLISHED"} if status == "plausible" else set())
+        carrier = candidate.actor_candidates[0] if "MOVED_WITH_ACTOR" in codes and len(candidate.actor_candidates) == 1 else None
+        named = assessment.actor_assignment if assessment else None
+        if status == "plausible" and carrier is not None and named in (None, carrier):
+            actor, rule = carrier, "MOVED_WITH_ONE_PERSON_AFTER_HIDDEN_CHANGE"
+            codes.add("NO_VISIBLE_TRANSITION")
+        else:
+            codes.discard("MOVED_WITH_ACTOR")
+            codes.update({"NO_VISIBLE_TRANSITION", "ACTOR_NOT_ESTABLISHED"} if status == "plausible" else set())
         if verdict == "supports":
             codes.add("MODEL_SUPPORT_OVERRULED")
     elif assessment is None:
@@ -66,7 +73,7 @@ def promote(*, candidate: Candidate, assessment: AssessmentResult | None, observ
                 actor = named
             else:
                 codes.add("ACTOR_NOT_ESTABLISHED")
-    if status != "supported" and kind in ("pick_up", "put_down", "place_in_zone"):
+    if status != "supported" and kind in ("pick_up", "put_down", "place_in_zone") and actor is None:
         codes.add("ACTOR_NOT_ESTABLISHED")
     record = EventRecord(event_id=event_id, revision=revision, object_id=candidate.object_id, event_type=kind,
                          actor_id=actor, zone_id=zone, t_start_ms=candidate.t_start_ms, t_end_ms=candidate.t_end_ms,
