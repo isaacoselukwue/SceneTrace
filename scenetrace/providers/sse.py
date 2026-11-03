@@ -1,10 +1,3 @@
-"""Incremental server-sent events decoder for provider streams.
-
-Handles arbitrary chunk boundaries (inside JSON, inside multi-byte UTF-8 and
-between CR and LF), several events per read, comments and heartbeats, CR/LF/CRLF
-line endings and a stream that ends without a final blank line. Lines are split
-on bytes before decoding, so a partial UTF-8 sequence is never decoded early.
-"""
 from __future__ import annotations
 
 import json
@@ -24,7 +17,7 @@ class SSEDecodeError(ValueError):
 
 
 class SSEDecoder:
-    MAX_LINE_BYTES = 8 * 1024 * 1024  # a single SAM frame line with masks stays far below this
+    MAX_LINE_BYTES = 8 * 1024 * 1024
 
     def __init__(self) -> None:
         self._buffer = bytearray()
@@ -48,7 +41,6 @@ class SSEDecoder:
         return events
 
     def close(self) -> list[SSEEvent]:
-        """Flush at end of stream. A trailing event without a blank line is still returned."""
         events: list[SSEEvent] = []
         while self._buffer:
             line, consumed = self._next_line(final=True)
@@ -66,9 +58,9 @@ class SSEDecoder:
     def _next_line(self, *, final: bool) -> tuple[bytes | None, int]:
         buf = self._buffer
         for index, byte in enumerate(buf):
-            if byte == 0x0A:  # LF
+            if byte == 0x0A:
                 return bytes(buf[:index]), index + 1
-            if byte == 0x0D:  # CR, possibly followed by LF in the next chunk
+            if byte == 0x0D:
                 if index + 1 < len(buf):
                     return bytes(buf[:index]), index + (2 if buf[index + 1] == 0x0A else 1)
                 if final:
@@ -91,7 +83,7 @@ class SSEDecoder:
             self._data, self._event = [], None
             return event
         if line.startswith(":"):
-            return None  # comment or heartbeat
+            return None
         field, _, value = line.partition(":")
         if value.startswith(" "):
             value = value[1:]
@@ -105,7 +97,6 @@ class SSEDecoder:
 
 
 def decode_json_event(event: SSEEvent) -> dict[str, Any] | None:
-    """Return the JSON payload, or None for the [DONE] sentinel and keepalives."""
     payload = event.data.strip()
     if payload == "" or payload == "[DONE]":
         return None

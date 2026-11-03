@@ -1,4 +1,3 @@
-"""Evaluation matching rules: one-to-one, eligibility thresholds and honest zero denominators."""
 from __future__ import annotations
 
 from scenetrace.evaluation.matching import Interval, actor_scores, event_scores, match, ratio
@@ -18,8 +17,8 @@ def test_one_prediction_cannot_explain_two_labels_and_duplicates_are_false_posit
 
 
 def test_eligibility_uses_iou_or_both_errors_and_type() -> None:
-    assert match([_i("P", 13500, 13600)], [_i("L", 13000, 14600)])  # start 500 ms, end 1000 ms off
-    assert not match([_i("P", 13500, 13600)], [_i("L", 11000, 14600)])  # start 2.5 s off and IoU 0.03
+    assert match([_i("P", 13500, 13600)], [_i("L", 13000, 14600)])
+    assert not match([_i("P", 13500, 13600)], [_i("L", 11000, 14600)])
     assert not match([_i("P", 1000, 1600, "put_down")], [_i("L", 1000, 1600)])
 
 

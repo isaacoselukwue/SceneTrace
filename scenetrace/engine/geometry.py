@@ -1,4 +1,3 @@
-"""Small geometry helpers on half-open integer boxes [x0, y0, x1, y1] in proxy pixels."""
 from __future__ import annotations
 
 import math
@@ -14,7 +13,6 @@ def diagonal(box: Sequence[int]) -> float:
 
 
 def edge_distance(a: Sequence[int], b: Sequence[int]) -> float:
-    """Gap between two boxes; zero when they touch or overlap. Box proximity is weak evidence."""
     dx = max(0, max(a[0] - b[2], b[0] - a[2]))
     dy = max(0, max(a[1] - b[3], b[1] - a[3]))
     return math.hypot(dx, dy)

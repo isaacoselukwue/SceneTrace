@@ -1,4 +1,3 @@
-"""API, sessions, jobs and the full fixture-mode flow through the real worker and pipeline."""
 from __future__ import annotations
 
 import dataclasses
@@ -74,15 +73,13 @@ def test_full_fixture_flow_upload_to_cited_answer_and_sealed_export(api: Api) ->
     kinds = [e["current"]["record"]["event_type"] for e in analysis["events"]]
     assert kinds[0] == "first_seen" and kinds[-1] == "last_seen" and "pick_up" in kinds
     statuses = {e["current"]["record"]["status"] for e in analysis["events"]}
-    assert "rejected" in statuses and "supported" in statuses  # the fixture pass-by is rejected, the lift supported
+    assert "rejected" in statuses and "supported" in statuses
     raw = [e for e in analysis["evidence"] if not e["derived"]]
     image = api.c.get(raw[0]["image_url"])
     assert image.status_code == 200 and image.headers["content-type"] == "image/png"
-    # Server-sent events replay from Last-Event-ID without duplicates.
     events = api.c.get(f"/api/v1/jobs/{accepted['job_id']}/events", headers={"Last-Event-ID": "2"}).text
     ids = [int(line[4:]) for line in events.splitlines() if line.startswith("id: ")]
     assert ids and ids[0] == 3 and ids == sorted(set(ids)) and "event: job." in events.splitlines()[-3]
-    # Ask a question; the answer is compiled from validated claims with citations.
     q = api.post(f"/api/v1/analyses/{accepted['analysis_id']}/questions",
                  json={"question": "Who picked up the bottle?", "idempotency_key": "question-0001"}).json()
     assert api.wait(q["job_id"])["state"] == "completed"
@@ -90,7 +87,6 @@ def test_full_fixture_flow_upload_to_cited_answer_and_sealed_export(api: Api) ->
     cited = [s for s in inv["sentences"] if s["citation"]]
     assert cited and all(s["citation"]["evidence_ids"] for s in cited)
     assert inv["run_mode"] == "fixture" and inv["review_verdict"] == "not_run"
-    # Export, verify against the registry anchor, then tamper with one evidence byte.
     exp = api.post(f"/api/v1/analyses/{accepted['analysis_id']}/exports", json={"idempotency_key": "export-0001"}).json()
     assert api.wait(exp["job_id"])["state"] == "completed"
     export = api.c.get(f"/api/v1/exports/{exp['export_id']}").json()
@@ -144,7 +140,7 @@ def test_needs_selection_then_bind(api: Api, monkeypatch: pytest.MonkeyPatch) ->
 def test_auth_csrf_cross_owner_and_deletion(api: Api, tmp_path: Path) -> None:
     clip = _ready_clip(api)
     anon = TestClient(api.c.app)
-    assert anon.get(f"/api/v1/clips/{clip['clip_id']}").status_code == 404  # no existence leak
+    assert anon.get(f"/api/v1/clips/{clip['clip_id']}").status_code == 404
     with api.c.app.state.svc.db.write() as conn:
         conn.execute("INSERT INTO sessions(id, owner_id, csrf_token, scope, created_at, expires_at) VALUES"
                      " ('sess_" + "9" * 32 + "', 'owner_other', 'tok', 'owner', 't', '2999-01-01T00:00:00Z')")
@@ -167,7 +163,7 @@ def test_upload_limits_consent_and_corrupt_media(tmp_path: Path) -> None:
         api = Api(client)
         too_big = api.upload()
         assert too_big.status_code == 413 and too_big.json()["error"]["code"] == "UPLOAD_TOO_LARGE"
-        assert list((small.data_dir / "tmp").iterdir()) == []  # nothing left behind
+        assert list((small.data_dir / "tmp").iterdir()) == []
         assert api.upload(consent="false").status_code in (400, 413)
         junk = tmp_path / "junk.mp4"
         junk.write_bytes(b"\x00not a video" * 100)
@@ -227,7 +223,7 @@ def test_restart_marks_running_jobs_interrupted_and_cancel_stops_work(tmp_path: 
                 token.check()
                 time.sleep(0.05)
         worker = Worker(svc, handlers={"normalise": blocking})
-        client.app.state.worker.cancel = worker.cancel  # route cancellation to this worker
+        client.app.state.worker.cancel = worker.cancel
         clip = api.upload().json()
         job = dict(svc.db.one("SELECT * FROM jobs WHERE id = ?", (clip["normalise_job_id"],)))
         runner = threading.Thread(target=worker.run_job, args=(job,))
@@ -300,7 +296,7 @@ def test_replay_transport_never_touches_the_network(tmp_path: Path, monkeypatch:
     replay = ReplayTransport(rec)
     assert replay.create_response({"model": "m", "input": "a"}).json["echo"] == "a"
     with pytest.raises(RecordingMiss):
-        replay.create_response({"model": "m", "input": "a"})  # recorded once, replayed once
+        replay.create_response({"model": "m", "input": "a"})
     with pytest.raises(RecordingMiss):
         replay.create_response({"model": "m", "input": "different"})
     shutil.rmtree(tmp_path / "rec")

@@ -1,4 +1,3 @@
-"""Command line: python -m scenetrace <command>."""
 from __future__ import annotations
 
 import argparse

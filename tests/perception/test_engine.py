@@ -1,7 +1,3 @@
-"""Event engine: synthetic trajectories for control logic, plus real SAM output for the synthetic hero clip.
-
-Synthetic trajectories verify control logic only. They are not model-accuracy evidence.
-"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -17,7 +13,7 @@ from scenetrace.engine.promotion import promote
 from .support import hero_frame_map, hero_tracking, load_events
 
 N = 160
-TARGET = [500, 360, 518, 404]  # about 47 px diagonal
+TARGET = [500, 360, 518, 404]
 
 
 def _obs(entity: str, boxes: dict[int, list[int]], *, unknown: set[int] = frozenset(), n: int = N) -> list[Observation]:
@@ -137,7 +133,7 @@ def test_occluded_disappearance_without_return_is_plausible_and_unattributed() -
     blocker = {f: _person_at(509) for f in range(40, 110)}
     obs = _obs("O1", target) + _obs("P1", blocker)
     cands = _interactions(_candidates(obs))
-    assert [c.candidate_type for c in cands] == ["pick_up"]  # no contradictory pass-by alongside it
+    assert [c.candidate_type for c in cands] == ["pick_up"]
     assert {"POSSIBLE_OCCLUSION", "TARGET_LOST"} <= set(cands[0].reason_codes)
     record = _promote(cands[0], obs, _assessment(cands[0], actor="P1"))
     assert (record.status, record.actor_id) == ("plausible", None) and "MODEL_SUPPORT_OVERRULED" in record.reason_codes
@@ -166,10 +162,9 @@ def test_stream_truncation_gives_partial_scope_not_absence() -> None:
     cands = _candidates(obs)
     last = [c for c in cands if c.candidate_type == "last_seen"][0]
     assert last.t_start_ms == 9900 and "PARTIAL_SCOPE" in last.reason_codes
-    assert _interactions(cands) == []  # nobody was near, so an unknown tail is not a pickup
+    assert _interactions(cands) == []
 
 
-# Real SAM 3.1 output for samples/synthetic/synthetic_bench_pickup.mp4 ---------------------------------
 def _hero(db, settings: Settings, **kw):
     target, person, transport, ctx = hero_tracking(db, settings, **kw)
     obs, ents, cov = build_observations(analysis_id=ctx.analysis_id, clip_id="clip_" + "d" * 32,
@@ -180,7 +175,7 @@ def _hero(db, settings: Settings, **kw):
 def test_real_hero_tracks_and_candidates(db, settings: Settings) -> None:
     obs, ents, cov, transport = _hero(db, settings)
     assert [(e.entity_id, e.first_t_ms, e.last_t_ms) for e in ents] == [("O1", 0, 17800), ("P1", 3000, 8900), ("P2", 10500, 18300)]
-    assert sum(1 for c in transport.calls if "upload" in c) == 1  # proxy uploaded once per analysis
+    assert sum(1 for c in transport.calls if "upload" in c) == 1
     cands = generate_candidates(observations=obs, entities=ents, coverage=cov, zones=[], frame_map=hero_frame_map())
     kinds = [(c.candidate_type, c.actor_candidates) for c in cands]
     assert kinds == [("first_seen", []), ("pick_up", ["P1"]), ("pick_up", ["P2"]), ("last_seen", [])]
@@ -191,7 +186,7 @@ def test_real_hero_tracks_and_candidates(db, settings: Settings) -> None:
     supported = _promote(lift, obs, _assessment(lift, actor="P2"))
     assert (supported.status, supported.actor_id) == ("supported", "P2")
     wrong_actor = _promote(lift, obs, _assessment(lift, actor="P1"))
-    assert wrong_actor.actor_id is None  # the model cannot assign someone geometry does not support
+    assert wrong_actor.actor_id is None
     unclear = _promote(lift, obs, _assessment(lift, verdict="insufficient", transition="unclear"))
     assert unclear.status == "plausible"
 
@@ -202,7 +197,7 @@ def test_real_truncated_stream_is_unknown_not_absent(db, settings: Settings) -> 
     states = {o.detection_state for o in obs if o.entity_id == "O1" and o.box is None}
     assert states == {"unknown"}
     row = db.one("SELECT cost_status FROM provider_calls WHERE operation = 'sam_video' LIMIT 1")
-    assert row["cost_status"] == "unknown"  # no terminal usage: the reservation is retained
+    assert row["cost_status"] == "unknown"
 
 
 def test_tracking_requests_opt_out_of_provider_storage(db, settings: Settings) -> None:

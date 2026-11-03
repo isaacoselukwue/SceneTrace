@@ -1,10 +1,3 @@
-"""Event matching and metrics for the evaluation protocol.
-
-A prediction can match a label only when type and target agree and either the
-temporal IoU is at least 0.30 or both start and end errors are at most 1,000 ms.
-Matching is maximum-cardinality and one-to-one; ties resolve by overlap, then by
-total time error, then by ID. Actor identity is scored separately.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -40,7 +33,6 @@ def eligible(pred: Interval, label: Interval) -> bool:
 
 
 def match(predictions: list[Interval], labels: list[Interval]) -> list[tuple[Interval, Interval]]:
-    """Maximum-cardinality one-to-one matching (augmenting paths over preference-ordered edges)."""
     def preference(p: Interval, label: Interval) -> tuple:
         error = abs(p.t_start_ms - label.t_start_ms) + abs(p.t_end_ms - label.t_end_ms)
         return (-iou(p, label), error, label.key)
@@ -66,7 +58,6 @@ def match(predictions: list[Interval], labels: list[Interval]) -> list[tuple[Int
 
 
 def ratio(numerator: int, denominator: int) -> float | None:
-    """None when the denominator is zero: never a flattering 100 percent."""
     return None if denominator == 0 else round(numerator / denominator, 4)
 
 
@@ -80,7 +71,6 @@ def event_scores(predictions: list[Interval], labels: list[Interval]) -> dict:
 
 
 def actor_scores(pairs: list[tuple[Interval, Interval]], association: dict[str, str]) -> dict:
-    """Actor accuracy over matched events whose labelled actor is observable."""
     observable = [(p, label) for p, label in pairs if label.actor is not None]
     assigned = [(p, label) for p, label in observable if p.actor is not None]
     correct = sum(1 for p, label in assigned if association.get(p.actor or "") == label.actor)

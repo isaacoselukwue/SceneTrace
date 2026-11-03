@@ -1,8 +1,3 @@
-"""Fail if a credential appears in tracked files or in the built client bundle.
-
-The configured key is compared without ever being printed. Generic patterns catch keys from
-other environments.
-"""
 from __future__ import annotations
 
 import re

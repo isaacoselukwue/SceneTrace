@@ -1,11 +1,3 @@
-"""Record a fresh live analysis of one clip, ask questions, and print the IDs to publish as a demo.
-
-This spends real money against Meta Model API within the configured caps. Use a fresh data directory
-so tracking is not reused from an earlier run and the recording is complete.
-
-    python tools/record_live_run.py --clip samples/synthetic/synthetic_bench_pickup.mp4 --name "Bench pickup" \
-        --phrase bottle --question "Who picked up the bottle?" --data-dir .local/demo-recording
-"""
 from __future__ import annotations
 
 import argparse
@@ -34,7 +26,7 @@ def wait(client: TestClient, job_id: str, timeout: float = 900) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description="Record a fresh live analysis of one clip, ask questions and print the IDs to publish as a demo. Spends real money against Meta Model API within the configured caps; use a fresh data directory.")
     parser.add_argument("--clip", type=Path, required=True)
     parser.add_argument("--name", required=True)
     parser.add_argument("--phrase", required=True)

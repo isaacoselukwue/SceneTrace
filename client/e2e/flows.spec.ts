@@ -4,7 +4,6 @@ import path from "node:path";
 const SAMPLE = path.resolve(new URL("../../samples/synthetic/synthetic_bench_pickup.mp4", import.meta.url).pathname);
 
 test.beforeEach(async ({ page }) => {
-  // The browser must never talk to a model provider directly.
   await page.route(/api\.meta\.ai/, (route) => route.abort());
 });
 
@@ -19,7 +18,6 @@ test("upload, select by drawing a box, analyse in fixture mode, ask, cite and ve
   await page.getByLabel("Draw a box").check();
   const frame = page.locator(".selector-frame");
   const box = (await frame.boundingBox())!;
-  // The bottle sits near x 511-529, y 361-405 of 960x540; the frame image fills the 16:9 holder.
   const sx = box.width / 960;
   await page.mouse.move(box.x + 509 * sx, box.y + 359 * sx);
   await page.mouse.down();
@@ -230,7 +228,7 @@ test("draw a destination zone and see it during playback", async ({ page }, info
   await page.mouse.up();
   await page.getByLabel(/Draw a zone/).check();
   await frame.scrollIntoViewIfNeeded();
-  const zoneBox = (await frame.boundingBox())!;  // checking the box scrolled the page
+  const zoneBox = (await frame.boundingBox())!;
   for (const [x, y] of [[770, 360], [840, 360], [840, 450], [770, 450]]) {
     await page.mouse.click(zoneBox.x + x * sx, zoneBox.y + y * sx);
   }

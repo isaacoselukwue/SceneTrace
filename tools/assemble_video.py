@@ -1,11 +1,3 @@
-"""Assemble the demonstration MP4 from the raw screen recording and its markers.
-
-Marked spans (waiting on live model calls) are sped up as recorded in markers.json; the
-on-screen captions say so. The last card is held so the video runs close to, but not over,
-the target length.
-
-    python tools/assemble_video.py <raw.webm> <markers.json> <out.mp4> [--target 178]
-"""
 from __future__ import annotations
 
 import argparse

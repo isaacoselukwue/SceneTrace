@@ -1,5 +1,3 @@
-# One application process with a persistent data volume. Do not scale to multiple replicas:
-# the job queue and cost ledger are owned by a single process.
 services:
   scenetrace:
     build: .

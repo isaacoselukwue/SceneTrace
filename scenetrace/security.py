@@ -1,4 +1,3 @@
-"""Owner sessions, CSRF tokens and simple in-process rate limits."""
 from __future__ import annotations
 
 import datetime as dt
@@ -24,7 +23,7 @@ LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 class Session:
     id: str
     owner_id: str
-    scope: str  # owner | public
+    scope: str
     csrf_token: str
     expires_at: str
 

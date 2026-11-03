@@ -1,5 +1,3 @@
-"""Build the immutable provider bundle for a run mode. Fixture never touches the network;
-recorded_real replays a recording and never runs a model; live never substitutes either."""
 from __future__ import annotations
 
 import json
@@ -32,7 +30,6 @@ def review_mode(settings: Settings) -> str:
 
 
 def recorded_review_mode(recording_dir: Path, reviewer_model: str) -> str:
-    """A replay shows the historical review: image review if the recording contains reviewer responses."""
     recording = Recording(recording_dir)
     for entry in recording.entries():
         if entry["kind"] == "responses.create":

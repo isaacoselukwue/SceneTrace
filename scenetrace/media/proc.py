@@ -1,5 +1,3 @@
-"""Run ffmpeg and ffprobe safely: argument arrays, no shell, minimal environment,
-finite deadlines and cancellation that kills the child process."""
 from __future__ import annotations
 
 import os
@@ -26,7 +24,6 @@ def tool(name: str) -> str:
 
 
 def child_env() -> dict[str, str]:
-    """Only PATH reaches media children; no keys, cookies or proxies."""
     return {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "LC_ALL": "C"}
 
 

@@ -1,12 +1,3 @@
-"""Render deterministic, clearly synthetic cartoon test clips for SceneTrace.
-
-Project owner: Isaac Oselukwue.
-
-These clips exist to exercise media handling, provider adapters and the event
-engine without filming anyone. They are drawn animations, not footage. They must
-never be presented as real recordings or counted in real-video evaluation.
-Each clip is written with a ground-truth label file describing what was drawn.
-"""
 from __future__ import annotations
 
 import argparse
@@ -22,7 +13,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 
 WIDTH, HEIGHT = 960, 540
-SCALE = 2  # supersampling factor for smoother edges
+SCALE = 2
 FPS = 25
 
 SKIN = (224, 172, 132)
@@ -41,14 +32,12 @@ def smooth(t: float) -> float:
 
 @dataclass
 class Person:
-    """A drawn figure. Positions are in output pixels; feet_y is the ground contact."""
-
     name: str
     shirt: tuple[int, int, int]
     trousers: tuple[int, int, int]
     height_px: float = 250.0
-    keyframes: list[tuple[float, float]] = field(default_factory=list)  # (t_s, x)
-    reach: list[tuple[float, float, float]] = field(default_factory=list)  # (t0, t1, peak)
+    keyframes: list[tuple[float, float]] = field(default_factory=list)
+    reach: list[tuple[float, float, float]] = field(default_factory=list)
 
     def x_at(self, t: float) -> float | None:
         if not self.keyframes or t < self.keyframes[0][0] or t > self.keyframes[-1][0]:
@@ -79,7 +68,7 @@ class Scenario:
     duration_s: float
     description: str
     people: list[Person]
-    bottles: list[dict]  # each: x, held_by, grab_t, hidden_after
+    bottles: list[dict]
     labels: list[dict]
     questions: list[dict]
 
@@ -88,15 +77,14 @@ def draw_background(d: ImageDraw.ImageDraw, s: int) -> None:
     for y in range(0, 300 * s, 4):
         c = int(lerp(196, 232, y / (300 * s)))
         d.rectangle([0, y, WIDTH * s, y + 4], fill=(c - 40, c - 10, 245))
-    d.rectangle([0, 230 * s, WIDTH * s, 330 * s], fill=(96, 140, 88))  # hedge band
+    d.rectangle([0, 230 * s, WIDTH * s, 330 * s], fill=(96, 140, 88))
     for tx in (90, 300, 700, 880):
         d.rectangle([(tx - 9) * s, 150 * s, (tx + 9) * s, 300 * s], fill=(102, 72, 50))
         d.ellipse([(tx - 70) * s, 60 * s, (tx + 70) * s, 210 * s], fill=(70, 128, 72))
-    d.rectangle([0, 300 * s, WIDTH * s, 440 * s], fill=(122, 170, 96))  # lawn
-    d.rectangle([0, 440 * s, WIDTH * s, HEIGHT * s], fill=(196, 186, 168))  # path
+    d.rectangle([0, 300 * s, WIDTH * s, 440 * s], fill=(122, 170, 96))
+    d.rectangle([0, 440 * s, WIDTH * s, HEIGHT * s], fill=(196, 186, 168))
     for px in range(0, WIDTH, 80):
         d.line([px * s, 440 * s, (px - 30) * s, HEIGHT * s], fill=(180, 170, 152), width=2 * s)
-    # Bench: back rest, seat and legs.
     bx0, bx1 = 360, 640
     for i in range(3):
         y = 352 + i * 14
@@ -104,7 +92,6 @@ def draw_background(d: ImageDraw.ImageDraw, s: int) -> None:
     d.rounded_rectangle([(bx0 - 6) * s, 404 * s, (bx1 + 6) * s, 414 * s], radius=3 * s, fill=(164, 108, 64), outline=OUTLINE, width=s)
     for lx in (bx0 + 12, bx1 - 20):
         d.rectangle([lx * s, 414 * s, (lx + 8) * s, 446 * s], fill=(60, 60, 66))
-    # Litter bin used as a neutral zone in later scenarios.
     d.rounded_rectangle([780 * s, 372 * s, 830 * s, 446 * s], radius=6 * s, fill=(46, 104, 70), outline=OUTLINE, width=s)
     d.rectangle([774 * s, 366 * s, 836 * s, 376 * s], fill=(36, 84, 56))
 
@@ -130,7 +117,6 @@ def limb(d: ImageDraw.ImageDraw, s: int, a: tuple[float, float], b: tuple[float,
 
 
 def draw_person(d: ImageDraw.ImageDraw, s: int, p: Person, t: float, feet_y: float = 500.0) -> tuple[float, float] | None:
-    """Draw a figure and return the leading hand position, or None when off-screen."""
     x = p.x_at(t)
     if x is None:
         return None
@@ -139,7 +125,7 @@ def draw_person(d: ImageDraw.ImageDraw, s: int, p: Person, t: float, feet_y: flo
     facing = 1 if v >= 0 else -1
     reach = p.reach_amount(t)
     if reach > 0:
-        facing = -1  # reach towards the bench on the left
+        facing = -1
     walking = abs(v) > 5
     phase = (x / (H * 0.42)) * math.pi if walking else 0.0
     swing = math.sin(phase) * (0.42 if walking else 0.0)
@@ -161,7 +147,6 @@ def draw_person(d: ImageDraw.ImageDraw, s: int, p: Person, t: float, feet_y: flo
     hand = None
     for sign, shade in ((-1, 0.82), (1, 1.0)):
         if sign == 1 and reach > 0:
-            # Leading arm reaches down and towards the bench, then lifts.
             ang = math.radians(lerp(10, 70, reach))
             elbow = (shoulder[0] - math.sin(ang) * arm, shoulder[1] + math.cos(ang) * arm)
             ang2 = math.radians(lerp(10, 40, reach))
@@ -278,7 +263,7 @@ def render(scenario: Scenario, out_dir: Path) -> Path:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description="Render deterministic, clearly synthetic cartoon test clips with ground-truth labels. They are drawn animations, never real footage, and are not counted in real-video evaluation.")
     parser.add_argument("--out", type=Path, default=Path("samples/synthetic"))
     parser.add_argument("--clip", choices=sorted(scenarios()), action="append")
     args = parser.parse_args()

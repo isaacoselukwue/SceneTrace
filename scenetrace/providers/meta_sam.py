@@ -1,10 +1,3 @@
-"""SAM 3.1 adapter on Meta Model API: selection on one frame and whole-clip tracking.
-
-Output is segmentation token text in the Responses stream. It is parsed with
-Meta's meta_sam_parser, converted to half-open boxes in proxy pixels, and paired
-with masks decoded to SVG paths. Coverage is complete only when the stream
-reached response.completed; otherwise every frame without a record is unknown.
-"""
 from __future__ import annotations
 
 import asyncio
@@ -72,10 +65,6 @@ def translate_svg_path(path: str, dx: float, dy: float) -> str:
 
 
 def to_provider_boxes(result: Any, *, width: int, height: int, with_masks: bool = True) -> tuple[list[ProviderBox], list[str]]:
-    """Convert parser records to ProviderBox in proxy pixels. Returns (boxes, diagnostics).
-
-    Masks are decoded only when requested: the arithmetic-coded payloads are slow to decode in pure
-    Python, and person tracks only need boxes (the UI labels them as boxes, not pixel masks)."""
     diagnostics = [f"{d.code}@{d.line}" for d in result.diagnostics]
     masks = {(m.frame.frame_index if m.frame else 0, m.object_id): m for m in result.records if m.kind == "mask"}
     boxes: list[ProviderBox] = []
@@ -86,14 +75,13 @@ def to_provider_boxes(result: Any, *, width: int, height: int, with_masks: bool 
         frame = rec.frame.frame_index if rec.frame else 0
         key = (frame, rec.object_id)
         if key in seen:
-            continue  # deterministic de-duplication of repeated records
+            continue
         seen.add(key)
         values = (rec.left, rec.top, rec.right, rec.bottom)
         if not all(math.isfinite(v) for v in values):
             diagnostics.append(f"NON_FINITE_BOX@{frame}")
             continue
         x0, y0, x1, y1 = math.floor(rec.left), math.floor(rec.top), math.ceil(rec.right), math.ceil(rec.bottom)
-        # Clamp only round-off at the frame edge; grossly invalid boxes are rejected, not salvaged.
         if x0 < -1 or y0 < -1 or x1 > width + 1 or y1 > height + 1 or x1 <= x0 or y1 <= y0:
             diagnostics.append(f"INVALID_BOX@{frame}")
             continue
@@ -117,7 +105,7 @@ def to_provider_boxes(result: Any, *, width: int, height: int, with_masks: bool 
                     area = total
                     centroid = (int((mask.bounds.left + sx / total) * 1000), int((mask.bounds.top + sy / total) * 1000))
                 svg = translate_svg_path(msp.decode_mask_to_svg_path(mask.mask), mask.bounds.left, mask.bounds.top) or None
-            except Exception as exc:  # a broken mask keeps its box; the mask is simply absent
+            except Exception as exc:
                 diagnostics.append(f"MASK_DECODE_FAILED@{frame}:{type(exc).__name__}")
         boxes.append(ProviderBox(proxy_frame_index=frame, provider_object_id=str(rec.object_id), box=[x0, y0, x1, y1],
                                  frame_width=width, frame_height=height, confidence_bp=confidence, mask_svg=svg,
@@ -127,8 +115,6 @@ def to_provider_boxes(result: Any, *, width: int, height: int, with_masks: bool 
 
 
 def with_placeholder_masks(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Swap mask payloads for a one-pixel mask in tracks that only need boxes; the parser decodes and
-    re-encodes every mask. Box tokens are untouched, and a mask split across deltas is carried forward."""
     replaced: list[dict[str, Any]] = []
     carried = ""
     for event in events:
@@ -178,7 +164,6 @@ _POOL_LOCK = threading.Lock()
 
 def parse_in_process(events: list[dict[str, Any]], media: str, width: int, height: int,
                      with_masks: bool) -> tuple[list[ProviderBox], list[str], str]:
-    """Run the CPU-heavy parse in a worker process so concurrent tracks decode in parallel."""
     global _POOL
     with _POOL_LOCK:
         if _POOL is None:
@@ -236,7 +221,7 @@ class MetaSamTracker:
                                    provider_object_id=b.provider_object_id, confidence_bp=b.confidence_bp) for b in boxes]
 
     def _ensure_upload(self, ctx: RunContext, video: ProxyVideo) -> str:
-        with self._upload_lock:  # target and person tracks start together; upload the proxy once
+        with self._upload_lock:
             key = f"{ctx.analysis_id}:{video.sha256}"
             if key not in self._uploads:
                 self._uploads[key] = self._upload(ctx, video)

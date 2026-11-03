@@ -1,8 +1,3 @@
-"""Opt-in live smoke test against Meta Model API. Runs only with SCENETRACE_RUN_LIVE_TESTS=true.
-
-Uses the bundled synthetic clip (a drawn animation, not real footage) and the normal budget caps.
-Results are model outputs: the assertions check structure and safety rules, not accuracy.
-"""
 from __future__ import annotations
 
 import json

@@ -1,11 +1,3 @@
-"""Claim validation and sentence compilation. No model prose reaches the answer view.
-
-Each claim must reproduce a current event revision exactly (reference validator),
-its evidence bytes must still match their recorded digests, the evidence must
-belong to this clip and owner, and abstention codes must be ones the controller
-allowed for this question. Sentences come only from render_claim and the fixed
-unknown and scope messages.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -64,7 +56,6 @@ def allowed_unknown_codes(plan: Plan, events: dict[str, EventRevision], *, provi
 
 
 def fallback_draft(plan: Plan, events: dict[str, EventRevision], allowed: set[str]) -> AnswerDraft:
-    """Claims built directly from stored records when the investigator does not submit valid claims."""
     claims = []
     if plan.intent != "unsupported":
         for revision in relevant_events(plan, events):
@@ -84,7 +75,7 @@ def fallback_draft(plan: Plan, events: dict[str, EventRevision], allowed: set[st
         "INSUFFICIENT_VISIBILITY": True,
         "CURRENT_LOCATION_UNKNOWN": True,
         "NO_SUPPORTED_EVENT": not supported,
-        "PROVIDER_UNAVAILABLE": True,  # a true statement about this investigation, even when records still answer
+        "PROVIDER_UNAVAILABLE": True,
         "BUDGET_EXHAUSTED": True,
     }
     codes = [c for c in order if c in allowed and needed[c]]
@@ -143,7 +134,7 @@ def compile_draft(draft: AnswerDraft | dict[str, Any], *, store: AnalysisStore, 
                         raise ClaimValidationError("EVIDENCE_DIGEST_MISMATCH")
             except ClaimValidationError as exc:
                 code = str(exc)
-            except Exception:  # noqa: BLE001 - any unexpected record problem blocks publication
+            except Exception:  # noqa: BLE001
                 code = "CLAIM_CHECK_FAILED"
         seen.add(claim.claim_id)
         if code:

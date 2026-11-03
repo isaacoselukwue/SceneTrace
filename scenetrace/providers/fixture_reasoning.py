@@ -1,8 +1,3 @@
-"""Deterministic development stand-ins for the Muse roles. No network, no model.
-
-They decide only from the stored geometry so fixture runs exercise the same
-validation path. Every fixture run is labelled development data in the UI.
-"""
 from __future__ import annotations
 
 import json
@@ -64,8 +59,6 @@ def keyword_plan(question: str, object_id: str) -> Plan:
 
 
 class FixtureInvestigatorModel:
-    """Reads stored events, then submits claims built from them. Exercises the same validators as live turns."""
-
     model_id = "fixture-investigator"
 
     def plan(self, ctx: RunContext, *, question: str, object_id: str, clip_duration_ms: int) -> Plan:

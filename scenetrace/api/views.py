@@ -1,4 +1,3 @@
-"""Assemble API DTOs from stored records. URLs are server routes by ID, never filesystem paths."""
 from __future__ import annotations
 
 from collections.abc import Mapping

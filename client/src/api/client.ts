@@ -1,4 +1,3 @@
-// Typed API client. Types come from the backend OpenAPI document (src/api/schema.ts is generated).
 import type { components } from "./schema";
 
 type Schemas = components["schemas"];
@@ -63,12 +62,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     body: body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body),
   });
   if (!response.ok) {
-    let error = { code: `HTTP_${response.status}`, message: "The request failed.", retryable: false };
-    try {
-      error = (await response.json()).error ?? error;
-    } catch {
-      /* keep the generic error */
-    }
+    const genericError = { code: `HTTP_${response.status}`, message: "The request failed.", retryable: false };
+    const payload = await response.json().catch(() => null);
+    const error = payload?.error ?? genericError;
     throw new ApiError(error.code, error.message, response.status, error.retryable);
   }
   if (response.status === 204) return undefined as T;

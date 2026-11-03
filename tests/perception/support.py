@@ -1,4 +1,3 @@
-"""Fakes for perception tests: a transport that replays the recorded real SAM streams."""
 from __future__ import annotations
 
 import json
@@ -19,8 +18,6 @@ def load_events(name: str) -> list[dict]:
 
 
 class FakeSamTransport:
-    """Serves recorded SAM streams: the 'bottle' concept stream stands in for the target track."""
-
     def __init__(self, *, target: str = "sam_video_bottle.events.json", person: str = "sam_video_person.events.json",
                  image: str = "sam_image_bottle.events.json", drop_terminal: bool = False) -> None:
         self.files = {"target": target, "person": person, "image": image}

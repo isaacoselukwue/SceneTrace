@@ -1,4 +1,3 @@
-"""Operational job events: appended to SQLite before emission, replayable by sequence."""
 from __future__ import annotations
 
 import json

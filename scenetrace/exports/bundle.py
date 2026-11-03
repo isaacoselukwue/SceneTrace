@@ -1,11 +1,3 @@
-"""Sealed, content-addressed export bundles.
-
-A bundle is built in a temporary directory from a frozen snapshot of a completed
-analysis, sealed with reference_core.integrity, verified, then renamed into place.
-The trusted expected head is stored in the database registry, outside every
-downloadable bundle. Integrity is not authenticity: a valid seal says the files
-match their recorded hashes, not that the video or its interpretation is true.
-"""
 from __future__ import annotations
 
 import json

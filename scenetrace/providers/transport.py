@@ -1,9 +1,3 @@
-"""HTTPX transport for Meta Model API (https://api.meta.ai/v1).
-
-The only live implementation of the provider wire protocol. No implicit retries:
-`metered_call` and the adapters own retry decisions so every attempt is metered.
-Errors are sanitised; the key is never logged or echoed.
-"""
 from __future__ import annotations
 
 import time
@@ -33,8 +27,8 @@ class HTTPResult:
 class StreamResult:
     status: int
     events: list[dict[str, Any]]
-    terminal: str | None  # one of TERMINAL_EVENTS, or None when the stream ended without one
-    response: dict[str, Any]  # the response object from the terminal event, if any
+    terminal: str | None
+    response: dict[str, Any]
     response_id: str | None
     usage: dict[str, Any] | None
     request_id: str | None
@@ -63,7 +57,6 @@ def error_from_response(resp: httpx.Response) -> ProviderError:
     if status in (401, 403) or (status == 404 and code == "model_not_found"):
         return ProviderUnavailable(code, retryable=False, **kwargs)
     if status in RETRYABLE_STATUS:
-        # 5xx work may already have run; treat billing as unknown. 429 is rejected before work.
         return ProviderError(code, retryable=True, ambiguous=status >= 500, **kwargs)
     if status == 504:
         return ProviderError(code, retryable=False, ambiguous=True, **kwargs)
@@ -146,12 +139,6 @@ class MetaTransport:
 
     def stream_response(self, body: dict[str, Any], *, cancel: CancelToken | None = None,
                         on_event: Callable[[dict[str, Any]], None] | None = None) -> StreamResult:
-        """Stream a Responses request to its terminal event.
-
-        Returns partial events when the stream ends without a terminal event
-        (terminal=None); callers must record coverage as incomplete. Raises a
-        ProviderError(ambiguous=True) for a disconnect after the request started.
-        """
         if body.get("tool_choice", "auto") != "auto":
             raise ValueError("Meta Model API supports only tool_choice=auto")
         payload = dict(body, stream=True)
@@ -218,7 +205,6 @@ class MetaTransport:
 
 
 def output_text(response: dict[str, Any]) -> str:
-    """Concatenate output_text parts of message items in a non-streaming Responses object."""
     parts: list[str] = []
     for item in response.get("output", []) or []:
         if item.get("type") == "message":

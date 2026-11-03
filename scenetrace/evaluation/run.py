@@ -1,14 +1,3 @@
-"""Evaluation reports: python -m scenetrace.evaluation.run [--live-review]
-
-Three separate results, never merged into one headline:
-1. Real-video evaluation over owned, pre-labelled clips in eval/labels/ (held-out split only).
-2. A synthetic smoke check over the drawn test clips. Not real-video evidence.
-3. Planted-fault and clean-control cases from recorded real run records.
-
-Recorded demonstrations are replayed into a throwaway data directory, so the
-default run needs no key and makes no provider calls. --live-review additionally
-sends every fault case to the live secondary reviewer (spends money within caps).
-"""
 from __future__ import annotations
 
 import argparse
@@ -68,7 +57,6 @@ def _analysis_for(svc: Services, source_sha256: str) -> dict | None:
 
 
 def associate(svc: Services, analysis_id: str, actors: list[dict]) -> dict[str, str]:
-    """Explicit evaluation association: each P track maps to the labelled actor whose presence overlaps it most."""
     mapping: dict[str, str] = {}
     for entity in svc.store.entities(analysis_id):
         if entity.kind != "person" or entity.first_t_ms is None or entity.last_t_ms is None:
@@ -106,7 +94,6 @@ def score_clip(svc: Services, label: dict) -> dict:
 
 def score_questions(svc: Services, analysis_id: str, label: dict, association: dict[str, str],
                     answers: dict[str, list[dict]] | None = None) -> dict:
-    """One rubric for every arm. answers maps question text to claim dicts; by default the stored investigations."""
     if answers is None:
         answers = {r["question"]: (loads(r["result_json"], {}) or {}).get("claims", [])
                    for r in svc.db.query("SELECT * FROM investigations WHERE analysis_id = ? AND result_json IS NOT NULL",
@@ -151,8 +138,6 @@ def score_questions(svc: Services, analysis_id: str, label: dict, association: d
 
 
 def without_reviewer(labels: dict[str, dict]) -> dict:
-    """Arm D: replay each demo's recorded investigator turns, in their recorded order, on a fresh import with the
-    secondary reviewer removed. Initial events are identical to arm C."""
     from ..demos import import_demos
     from ..investigator.controller import run_investigation
     from ..jobs.pipeline import _recording_dir
@@ -267,7 +252,6 @@ def fault_injection(svc: Services, live_review: bool) -> dict:
 
 
 def carried_review(results: list[dict]) -> dict | None:
-    """Reuse an earlier live review only if every case's claim is identical; label where it came from."""
     path = REPORTS / "fault-injection.json"
     try:
         previous = json.loads(path.read_text())
@@ -286,7 +270,6 @@ def carried_review(results: list[dict]) -> dict | None:
 
 
 def review_cases(svc: Services, results: list[dict], sources: dict[str, str]) -> dict:
-    """Send each case's claim, alone, to the live reviewer with the cited event's evidence."""
     from ..domain import Claim
     from ..investigator.review import run_review
     from ..providers.meta_muse import MetaReviewer
@@ -330,7 +313,6 @@ BASELINE_SCHEMA = {
 
 
 def native_video_baseline(svc: Services, label: dict) -> dict:
-    """Arm A: Muse Spark watches the whole proxy video with the same object reference and no SceneTrace events."""
     from ..providers.base import CallOutcome
     from ..providers.recording import dispatch_call
     from ..providers.transport import MetaTransport, output_text
@@ -359,8 +341,6 @@ def native_video_baseline(svc: Services, label: dict) -> dict:
             "text": {"format": text_format("video_events", BASELINE_SCHEMA)}}
     try:
         counted = transport.count_input_tokens(body).json["input_tokens"]
-        # The count endpoint omits video tokens (measured: 384 counted against 4,271 and 5,311 billed for 16 s and 20 s
-        # clips, about 265 per second), so video gets a conservative allowance of 600 tokens per second on top.
         video_allowance = VIDEO_TOKENS_PER_SECOND * -(-int(clip["duration_ms"]) // 1000)
         bound = svc.settings.rates.token_upper_bound(model, int(counted) + video_allowance, 4000)
 
@@ -522,7 +502,8 @@ def summary_markdown(r: dict) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description="Score real-video runs against held-out labels, run the synthetic smoke check and the "
+                                     "planted-fault suite. --live-review also sends the fault cases to the live reviewer (spends money within caps).")
     parser.add_argument("--live-review", action="store_true", help="Send fault cases to the live reviewer (spends money)")
     parser.add_argument("--live-baseline", action="store_true", help="Run arm A, Muse Spark on the whole video (spends money)")
     args = parser.parse_args(argv)
@@ -534,7 +515,7 @@ def main(argv: list[str] | None = None) -> int:
         settings = Settings.load(ROOT, env=env)
         svc = Services.create(settings)
         import_demos(svc, ROOT / "demos")
-        compared = arms(svc, args.live_baseline)  # before the fault suite appends revisions to the same records
+        compared = arms(svc, args.live_baseline)
         report = {"generated_at": utc_now(), "software_commit": _commit(),
                   "config_sha256": _sha(ROOT / "config" / "defaults.json"),
                   "label_sha256": {p.name: _sha(p) for p in sorted((ROOT / "samples" / "synthetic").glob("*.label.json"))},

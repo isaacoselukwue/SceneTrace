@@ -1,8 +1,3 @@
-"""HTTP request and response DTOs.
-
-These models generate the OpenAPI document from which the client TypeScript
-types are produced.
-"""
 from __future__ import annotations
 
 from typing import Annotated, Literal
@@ -37,7 +32,6 @@ class ErrorEnvelope(Out):
     error: ErrorBody
 
 
-# Session and capabilities ----------------------------------------------------
 class SessionCreate(In):
     access_code: str | None = Field(default=None, max_length=200)
 
@@ -91,7 +85,6 @@ class ReadyOut(Out):
     ffmpeg: bool
 
 
-# Clips ------------------------------------------------------------------------
 class ClipOut(Out):
     clip_id: str
     status: Literal["uploaded", "normalising", "ready", "rejected", "failed", "deleted", "expired"]
@@ -124,7 +117,6 @@ class FrameOut(Out):
     image_url: str
 
 
-# Analyses -----------------------------------------------------------------------
 class TargetConceptIn(In):
     kind: Literal["concept"]
     phrase: str = Field(min_length=1, max_length=60, pattern=r"^[A-Za-z0-9][A-Za-z0-9 \-']*$")
@@ -344,7 +336,6 @@ class ObservationsPage(Out):
     next_t0_ms: int | None
 
 
-# Questions and investigations ------------------------------------------------------
 class QuestionCreate(In):
     question: str = Field(min_length=1, max_length=300)
     object_id: str = Field(default="O1", pattern=r"^O[1-9][0-9]*$")
@@ -408,7 +399,6 @@ class InvestigationOut(Out):
     recorded_at: str | None
 
 
-# Jobs ----------------------------------------------------------------------
 class JobOut(Out):
     job_id: str
     kind: Literal["normalise", "analysis", "question", "export"]
@@ -440,7 +430,6 @@ class JobEventOut(Out):
     data: dict
 
 
-# Demos and exports ------------------------------------------------------------------
 class RecordedQuestionOut(Out):
     investigation_id: str
     question: str

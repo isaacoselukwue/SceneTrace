@@ -1,5 +1,3 @@
-"""Abuse and lifecycle cases: remote cleanup retries, exports of active runs, crafted names, SSE scope,
-demo publication rules, retention expiry and the supported-people limit."""
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,6 +1,3 @@
-"""Bounded investigation of one question. The application, not the model, owns the workflow:
-structured intent first, then a capped tool loop, then deterministic validation and
-compilation against an immutable snapshot, then optional secondary review."""
 from __future__ import annotations
 
 import json
@@ -57,7 +54,6 @@ def run_investigation(ctx: RunContext, *, providers: ProviderSet, store: Analysi
     limits = {"turns": 0, "tool_calls": 0, "inspections": 0, "repairs": 0, "reviews": 0}
     provider_failed = budget_exhausted = False
     notes: list[str] = []
-    # 1. Structured intent, validated locally.
     plan_source = "model"
     try:
         plan = providers.investigator.plan(ctx, question=question, object_id=object_id, clip_duration_ms=clip["duration_ms"] or 0)
@@ -73,7 +69,6 @@ def run_investigation(ctx: RunContext, *, providers: ProviderSet, store: Analysi
     tc = ToolContext(ctx=ctx, providers=providers, store=store, storage=storage, settings=settings, analysis_id=analysis_id,
                      owner_id=owner_id, object_id=object_id, allowed_unknown=allowed, limits={"inspections": 0})
     draft: dict[str, Any] | None = None
-    # 2. Bounded tool loop. Unsupported questions never reach the model's tools.
     if plan.intent != "unsupported" and not budget_exhausted:
         instructions = runtime_prompt("investigator")
         history = _opening(question, object_id, clip["duration_ms"] or 0, allowed)
@@ -88,7 +83,7 @@ def run_investigation(ctx: RunContext, *, providers: ProviderSet, store: Analysi
                     if limits["repairs"] >= settings.limit("max_answer_repairs"):
                         notes.append("PROSE_AFTER_REPAIR")
                         break
-                    limits["repairs"] += 1  # the prose itself is withheld
+                    limits["repairs"] += 1
                     history = history + [{"type": "message", "role": "user", "content": [{"type": "input_text", "text": REPAIR_TEXT}]}]
                     continue
                 outputs = []
@@ -115,7 +110,6 @@ def run_investigation(ctx: RunContext, *, providers: ProviderSet, store: Analysi
             provider_failed = True
             notes.append("PROVIDER_FAILED")
     limits["inspections"] = tc.limits["inspections"]
-    # 3. Validate against the snapshot taken now; tools may have appended revisions.
     snapshot = store.snapshot(analysis_id)
     events = store.current_events(analysis_id)
     allowed = allowed_unknown_codes(plan, events, provider_failed=provider_failed, budget_exhausted=budget_exhausted)
@@ -129,7 +123,6 @@ def run_investigation(ctx: RunContext, *, providers: ProviderSet, store: Analysi
         compiled = compile_draft(fallback_draft(plan, events, allowed), **common)
         compiled.rejected = rejected + compiled.rejected
         source = "deterministic_fallback"
-    # 4. Optional secondary review in a fresh context.
     review = run_review(ctx, providers=providers, store=store, storage=storage, analysis_id=analysis_id, owner_id=owner_id,
                         question=question, claims=compiled.claims, enabled=settings.enable_secondary_review)
     if review.mode != "not_run":

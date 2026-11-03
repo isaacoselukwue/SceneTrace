@@ -1,7 +1,3 @@
-"""Settings loaded from the environment plus the checked-in configuration files.
-
-Secrets are read on the server only and are never included in repr, logs or API output.
-"""
 from __future__ import annotations
 
 import json
@@ -35,8 +31,6 @@ def _flag(value: str | None, default: bool = False) -> bool:
 
 @dataclass(frozen=True)
 class Rates:
-    """Rate card from config/rates.json. Money is integer micro-US dollars."""
-
     revision: str
     sam_image_microusd: int
     sam_video_frame_microusd: int
@@ -64,7 +58,6 @@ class Rates:
         return images * self.sam_image_microusd
 
     def token_cost(self, model_id: str, input_tokens: int, cached_tokens: int, output_tokens: int) -> int:
-        """Usage-based cost. Cached tokens are a subset of input tokens and are not charged twice."""
         rate = self.text_models.get(model_id)
         if rate is None:
             raise KeyError(f"no rate for {model_id}")
@@ -73,10 +66,9 @@ class Rates:
         total = (uncached * rate["input_microusd_per_million"]
                  + cached * rate["cached_input_microusd_per_million"]
                  + output_tokens * rate["output_microusd_per_million"])
-        return -(-total // 1_000_000)  # ceiling division
+        return -(-total // 1_000_000)
 
     def token_upper_bound(self, model_id: str, counted_input_tokens: int, max_output_tokens: int) -> int:
-        """Worst case before dispatch: every counted input token uncached plus the full output budget."""
         return self.token_cost(model_id, counted_input_tokens, 0, max_output_tokens)
 
 

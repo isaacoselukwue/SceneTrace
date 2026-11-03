@@ -1,6 +1,3 @@
-"""The five investigator tools. Arguments are validated locally against the published
-schemas and server-known IDs; the server chooses every path, prompt and frame budget.
-Results are compact JSON of stored records, never model prose."""
 from __future__ import annotations
 
 import json
@@ -144,7 +141,7 @@ def parse_arguments(name: str, raw: str) -> tuple[dict[str, Any] | None, str | N
         return None, "INVALID_ARGUMENTS"
     for value in args.values():
         if isinstance(value, str) and ("/" in value or "\\" in value or ":" in value):
-            return None, "INVALID_ARGUMENTS"  # no paths or URLs are accepted anywhere
+            return None, "INVALID_ARGUMENTS"
     if "candidate_id" in args and not str(args["candidate_id"]).startswith("K"):
         return None, "INVALID_ARGUMENTS"
     return args, None

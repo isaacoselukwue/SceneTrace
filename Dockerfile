@@ -1,4 +1,3 @@
-# SceneTrace: one application process serving the API, the worker and the built client.
 FROM node:22.17.0-bookworm-slim AS client
 WORKDIR /app/client
 COPY client/package.json client/package-lock.json ./

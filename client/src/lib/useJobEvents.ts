@@ -1,4 +1,3 @@
-// Resumable job event stream. EventSource sends Last-Event-ID on reconnect; events are de-duplicated by seq.
 import { useEffect, useRef, useState } from "react";
 import type { JobEvent } from "../api/client";
 

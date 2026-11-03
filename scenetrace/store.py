@@ -1,8 +1,3 @@
-"""Analysis record store: the single access layer for per-analysis records.
-
-Evidence and event revisions are immutable: a correction
-appends a new revision and never rewrites one an earlier answer used.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -38,7 +33,6 @@ class AnalysisStore:
         self.db = db
         self.storage = storage
 
-    # Analysis and clip context ------------------------------------------------------
     def analysis(self, analysis_id: str, owner_id: str | None = None) -> dict[str, Any]:
         row = self.db.one("SELECT * FROM analyses WHERE id = ?", (analysis_id,))
         if row is None or (owner_id is not None and row["owner_id"] != owner_id):
@@ -62,7 +56,6 @@ class AnalysisStore:
         return [Zone(zone_id=r["entity_id"], label=r["label"], polygon=[tuple(p) for p in loads(r["polygon_json"], [])])
                 for r in rows]
 
-    # Tracking ----------------------------------------------------------------------
     def save_tracking(self, analysis_id: str, owner_id: str, result: TrackingResult, cache_key: str,
                       raw_asset_id: str | None) -> None:
         with self.db.write() as conn:
@@ -83,7 +76,6 @@ class AnalysisStore:
                           " ORDER BY created_at DESC LIMIT 1", (owner_id, cache_key))
         return TrackingResult.model_validate_json(row["result_json"]) if row else None
 
-    # Observations, entities and coverage ------------------------------------------------
     def save_observations(self, analysis_id: str, observations: list[Observation], entities: list[Entity],
                           coverage: list[Coverage]) -> None:
         with self.db.write() as conn:
@@ -153,7 +145,6 @@ class AnalysisStore:
                          terminal_status=r["terminal_status"], missing_ranges=[tuple(x) for x in loads(r["missing_ranges_json"], [])])
                 for r in rows]
 
-    # Candidates and evidence --------------------------------------------------------------
     def save_candidates(self, analysis_id: str, candidates: list[Candidate]) -> None:
         with self.db.write() as conn:
             for c in candidates:
@@ -187,7 +178,6 @@ class AnalysisStore:
         rows = self.db.query("SELECT evidence_id FROM evidence WHERE analysis_id = ?", (analysis_id,))
         return 1 + max((int(r["evidence_id"][1:]) for r in rows), default=0)
 
-    # Assessments and events -------------------------------------------------------------------
     def add_assessment(self, record: AssessmentRecord) -> None:
         with self.db.write() as conn:
             conn.execute("INSERT INTO assessments(id, analysis_id, candidate_id, purpose, model_id, run_mode, provider_call_id,"
@@ -210,7 +200,6 @@ class AnalysisStore:
 
     def append_event_revision(self, analysis_id: str, record: EventRecord, *, candidate_id: str | None,
                               basis: dict[str, Any]) -> EventRevision:
-        """Append the next revision. The record's revision must equal current + 1."""
         digest = record_digest(record)
         now = utc_now()
         with self.db.write() as conn:
@@ -242,7 +231,6 @@ class AnalysisStore:
         return {r.record.event_id: r for r in sorted(revisions, key=lambda r: int(r.record.event_id[1:]))}
 
     def events_at(self, analysis_id: str, snapshot: dict[str, int]) -> dict[str, EventRevision]:
-        """Exact revisions named by an immutable snapshot {event_id: revision}."""
         out: dict[str, EventRevision] = {}
         for event_id, revision in snapshot.items():
             row = self.db.one("SELECT * FROM event_revisions WHERE analysis_id = ? AND event_id = ? AND revision = ?",

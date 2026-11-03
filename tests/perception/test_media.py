@@ -1,4 +1,3 @@
-"""Media ingestion: probe limits, exact frame maps (constant and variable rate), rotation and frame extraction."""
 from __future__ import annotations
 
 import subprocess
@@ -46,15 +45,14 @@ def _encode(path: Path, numbers: list[int], fps: int, extra: list[str] | None = 
 
 
 def test_constant_rate_map_is_exact(tmp_path: Path, settings: Settings) -> None:
-    src = _encode(tmp_path / "cfr.mp4", list(range(75)), 25)  # 3 s at 25 fps
+    src = _encode(tmp_path / "cfr.mp4", list(range(75)), 25)
     probe = probe_media(src, settings=settings)
     assert (probe.width, probe.height, probe.frame_count, probe.variable_frame_rate) == (640, 360, 75, False)
     result = normalise_clip(src, tmp_path / "proxy", probe=probe, settings=settings)
     assert result.frame_count == len(result.frame_map.entries) == 30
     for entry in result.frame_map.entries:
         assert entry.t_ms == entry.proxy_frame_index * 100
-        assert entry.source_pts_ms <= entry.t_ms  # the frame displayed at that slot
-        # 25 fps: slot k at k*100 ms shows source frame floor(k * 2.5)
+        assert entry.source_pts_ms <= entry.t_ms
         assert entry.source_frame_index == (entry.proxy_frame_index * 5) // 2
     for k in (0, 7, 29):
         img = Image.open(__import__("io").BytesIO(proxy_frame_png(result.proxy_path, k, fps=10)))
@@ -64,7 +62,6 @@ def test_constant_rate_map_is_exact(tmp_path: Path, settings: Settings) -> None:
 def test_variable_rate_map_uses_timestamps(tmp_path: Path, settings: Settings) -> None:
     base = _encode(tmp_path / "base.mp4", list(range(120)), 30)
     vfr = tmp_path / "vfr.mp4"
-    # Drop frames irregularly while keeping original timestamps: a genuinely variable-rate source.
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(base), "-vf", "select='not(mod(n,3))+between(n,40,55)'",
                     "-fps_mode", "vfr", "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p", str(vfr)], check=True, timeout=120)
     probe = probe_media(vfr, settings=settings)
@@ -74,7 +71,6 @@ def test_variable_rate_map_uses_timestamps(tmp_path: Path, settings: Settings) -
                                    tmp_path / "src")
     for entry in result.frame_map.entries:
         drawn = _decode_number(Image.open(frames[entry.proxy_frame_index]))
-        # The drawn number is the original 30 fps frame number, so its time is drawn / 30 s.
         assert drawn * 1000 / 30 <= entry.t_ms + 1
         assert drawn == max(d for d in _kept_numbers() if d * 1000 / 30 <= entry.t_ms + 1)
         proxy_img = Image.open(__import__("io").BytesIO(proxy_frame_png(result.proxy_path, entry.proxy_frame_index, fps=10)))

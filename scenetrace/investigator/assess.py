@@ -1,4 +1,3 @@
-"""Structured visual assessment of one candidate, validated locally before it is stored."""
 from __future__ import annotations
 
 from typing import Any, cast
@@ -17,7 +16,7 @@ from ..store import AnalysisStore
 def candidate_frames(store: AnalysisStore, analysis_id: str, candidate_id: str, *, latest: int = 6) -> list[EvidenceItem]:
     raw = [e for e in store.evidence(analysis_id).values() if e.candidate_id == candidate_id and not e.evidence.derived]
     raw.sort(key=lambda e: int(e.evidence.evidence_id[1:]))
-    chosen = raw[-latest:]  # an inspection appends a fresh set; assess the newest frames
+    chosen = raw[-latest:]
     return sorted(chosen, key=lambda e: e.evidence.t_ms)
 
 

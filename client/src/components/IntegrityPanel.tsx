@@ -15,7 +15,7 @@ export function IntegrityPanel({ analysis, owner }: { analysis: AnalysisOut; own
   const [error, setError] = useState<string | null>(null);
   const refresh = () => api.exports(analysis.analysis_id).then(setExports).catch(() => setExports([]));
   useJobEvents(job, () => { setJob(null); refresh(); });
-  useEffect(() => { refresh(); }, [analysis.analysis_id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { refresh(); }, [analysis.analysis_id]);
   const latest = exports.find((e) => e.status === "sealed");
 
   async function create() {

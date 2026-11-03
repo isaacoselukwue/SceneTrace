@@ -1,4 +1,3 @@
-"""Shared pytest fixtures. Tests never call the live provider unless marked `live`."""
 from __future__ import annotations
 
 import os
@@ -12,7 +11,6 @@ from scenetrace.db import Database
 
 @pytest.fixture(autouse=True)
 def _no_live_key(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
-    """Strip the provider key from ordinary tests so nothing can reach the network by accident."""
     if request.node.get_closest_marker("live") is None:
         monkeypatch.delenv("MODEL_API_KEY", raising=False)
 

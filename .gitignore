@@ -1,4 +1,3 @@
-# Secrets and local state
 .env
 .env.*
 !.env.example
@@ -6,10 +5,8 @@
 *.sqlite3
 *.sqlite3-*
 
-# Private footage never belongs in the repository
 samples/private/
 
-# Python
 .venv/
 __pycache__/
 *.pyc
@@ -17,7 +14,6 @@ __pycache__/
 .ruff_cache/
 .pyrefly_cache/
 
-# Client
 client/node_modules/
 client/dist/
 client/test-results/

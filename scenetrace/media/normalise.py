@@ -1,11 +1,3 @@
-"""Create the 10 fps tracking proxy and its exact frame map.
-
-Every proxy slot k (t = k * 100 ms on the clip timeline) shows the source frame
-being displayed at that time: the last source frame whose presentation time is
-not after the slot. Those source frames are selected explicitly by decode index,
-decoded once, and written to the encoder (duplicated when the source is slower
-than the proxy), so the map is exact for variable frame rate sources too.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -71,8 +63,6 @@ def build_frame_map(probe: ProbeResult, *, fps: int, proxy_w: int, proxy_h: int)
 
 
 def select_expression(indices: list[int]) -> str:
-    """A select filter for exact decode indices. The sum is built as a balanced tree because
-    ffmpeg's expression parser rejects flat chains of more than about 100 terms."""
     def tree(items: list[str]) -> str:
         if len(items) == 1:
             return items[0]
@@ -156,7 +146,7 @@ def normalise_clip(source: Path, proxy_dir: Path, *, probe: ProbeResult, setting
 
 
 def proxy_frame_png(proxy_path: Path, frame_index: int, *, fps: int, cancel: CancelToken | None = None) -> bytes:
-    del fps  # the proxy is constant rate, so the decode index is the proxy frame index
+    del fps
     result = run([tool("ffmpeg"), "-v", "error", "-nostdin", "-protocol_whitelist", "file", "-f", "mov",
                   "-i", str(proxy_path), "-vf", select_expression([frame_index]), "-fps_mode", "passthrough",
                   "-frames:v", "1", "-f", "image2pipe", "-c:v", "png", "pipe:1"], timeout_s=60, cancel=cancel)

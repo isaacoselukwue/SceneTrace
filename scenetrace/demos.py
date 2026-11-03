@@ -1,11 +1,3 @@
-"""Approved recorded demonstrations.
-
-publish_demo packages a completed live analysis: the original upload, its proxy and
-frame map, the transport recording of every provider exchange, the target and the
-questions asked. import_demos replays that package through the normal pipeline in
-recorded_real mode, so the public copy is rebuilt from recorded model outputs with
-no network access and no new model calls. Only a human-approved package is published.
-"""
 from __future__ import annotations
 
 import json

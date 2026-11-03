@@ -1,20 +1,3 @@
-"""Provider strict-subset schemas and strict local re-validation of model output.
-
-Meta's strict structured output and strict function tools accept a subset
-modelled on OpenAI's: the root is a plain object,
-oneOf and allOf are unsupported anywhere, anyOf is allowed below the root, and
-every object sets additionalProperties false and lists every property in
-required. Local pydantic and contract schemas are richer, so they are
-transformed here instead of being sent unchanged.
-
-The transformation only removes what the provider cannot enforce (titles,
-defaults, string lengths, uniqueness) or rewrites it equivalently (const to a
-one-value enum, oneOf to anyOf, $ref inlined, optional to required and
-nullable). Structures with no faithful equivalent (open maps, tuples, recursion,
-negation) raise SchemaSubsetError. Every model output is parsed again with the
-strict local pydantic model, which still enforces the full contract and rejects
-extra fields.
-"""
 from __future__ import annotations
 
 import copy
@@ -27,17 +10,14 @@ from pydantic import BaseModel, ValidationError
 
 M = TypeVar("M", bound=BaseModel)
 
-# Keywords the strict subset accepts and the transformation keeps.
 KEPT_KEYWORDS = frozenset({
     "type", "properties", "required", "additionalProperties", "items", "enum", "anyOf", "description",
     "pattern", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf", "minItems", "maxItems",
 })
-# Annotations and constraints the provider cannot enforce. Local re-validation still enforces them.
 DROPPED_KEYWORDS = frozenset({
     "title", "default", "examples", "minLength", "maxLength", "uniqueItems", "format", "readOnly", "writeOnly",
     "deprecated", "$schema", "$id", "$comment", "contentEncoding", "contentMediaType", "discriminator",
 })
-# Structures without a faithful strict-subset equivalent. These fail loudly instead of being loosened.
 UNSUPPORTED_KEYWORDS = frozenset({
     "not", "if", "then", "else", "prefixItems", "patternProperties", "propertyNames", "dependentRequired",
     "dependentSchemas", "unevaluatedProperties", "unevaluatedItems", "contains", "minContains", "maxContains",
@@ -50,21 +30,17 @@ FORMAT_NAME = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
 class SchemaSubsetError(ValueError):
-    """A local schema has no faithful provider strict-subset equivalent."""
+    pass
 
 
 class StructuredOutputError(ValueError):
-    """Model output that is not valid for the strict local model. It is never published or retried."""
-
     def __init__(self, code: str, *, provider_call_id: str | None = None) -> None:
         super().__init__(code)
         self.code = code
         self.provider_call_id = provider_call_id
 
 
-# Transformation ----------------------------------------------------------------
 def strict_subset(schema: dict[str, Any]) -> dict[str, Any]:
-    """Return the provider strict-subset form of a draft 2020-12 schema (as pydantic and contracts/ emit)."""
     if not isinstance(schema, dict):
         raise SchemaSubsetError("a schema must be a JSON object")
     defs = {**(schema.get("definitions") or {}), **(schema.get("$defs") or {})}
@@ -88,7 +64,7 @@ def _convert(node: Any, defs: dict[str, Any], stack: tuple[str, ...], *, at_root
     if "oneOf" in node:
         if "anyOf" in node:
             raise SchemaSubsetError("oneOf beside anyOf is not supported")
-        node["anyOf"] = node.pop("oneOf")  # equivalent for the disjoint alternatives pydantic emits
+        node["anyOf"] = node.pop("oneOf")
     unsupported = UNSUPPORTED_KEYWORDS & node.keys()
     if unsupported:
         raise SchemaSubsetError(f"unsupported keywords: {sorted(unsupported)}")
@@ -170,7 +146,6 @@ def _convert_object(node: dict[str, Any], defs: dict[str, Any], stack: tuple[str
     converted: dict[str, Any] = {}
     for name, sub in properties.items():
         value = _convert(sub, defs, stack)
-        # The subset requires every property, so a locally optional field becomes required and nullable.
         converted[name] = value if name in required else _nullable(value)
     out: dict[str, Any] = {"type": "object", "properties": converted, "required": list(converted),
                            "additionalProperties": False}
@@ -217,9 +192,7 @@ def _nullable(node: dict[str, Any]) -> dict[str, Any]:
     return {"anyOf": [node, {"type": "null"}]}
 
 
-# Verification ----------------------------------------------------------------------
 def strict_violations(schema: Any) -> list[str]:
-    """Every way a schema departs from the strict subset; empty when the provider would accept it."""
     if not isinstance(schema, dict) or schema.get("type") != "object":
         return ["$: the root is not a plain object"]
     problems: list[str] = []
@@ -260,12 +233,10 @@ def _model_schema(model: type[BaseModel]) -> dict[str, Any]:
 
 
 def model_schema(model: type[BaseModel]) -> dict[str, Any]:
-    """The strict-subset schema of a pydantic model (a fresh copy the caller may narrow)."""
     return copy.deepcopy(_model_schema(model))
 
 
 def text_format(name: str, schema: dict[str, Any]) -> dict[str, Any]:
-    """Responses API `text.format` for strict structured output. Refuses a schema outside the subset."""
     if not FORMAT_NAME.match(name):
         raise ValueError("format names use letters, digits, underscores and hyphens, up to 64 characters")
     problems = strict_violations(schema)
@@ -274,7 +245,6 @@ def text_format(name: str, schema: dict[str, Any]) -> dict[str, Any]:
     return {"type": "json_schema", "name": name, "strict": True, "schema": schema}
 
 
-# Local re-validation -----------------------------------------------------------------
 class _DuplicateKey(ValueError):
     pass
 
@@ -293,7 +263,6 @@ def _no_constants(value: str) -> Any:
 
 
 def parse_strict(text: str, model: type[M]) -> M:
-    """Parse model output as strict JSON for `model`: no duplicate keys, no NaN, no extra fields, no coercion."""
     try:
         data = json.loads(text, object_pairs_hook=_no_duplicates, parse_constant=_no_constants)
     except _DuplicateKey as exc:

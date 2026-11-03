@@ -1,9 +1,3 @@
-"""Deterministic development tracks. No network, no model: fixture mode only.
-
-Given any clip and a seed box, it produces a stationary target, a person who
-passes close by without touching it, and a later person who lifts it and carries
-it out of frame. The UI labels every fixture run as development data.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -58,7 +52,7 @@ class FixtureTracker:
                     add(f, "1", _box(tx + p * (W - tx + tw), ty - th * 0.8, tw, th, W, H))
             else:
                 start, end = int(n * 0.15), int(n * 0.35)
-                if start <= f <= end:  # passes close to the target without touching it
+                if start <= f <= end:
                     p = (f - start) / max(1, end - start)
                     add(f, "0", _box(-person_w + p * (W + 2 * person_w), ty + th - person_h / 2, person_w, person_h, W, H))
                 arrive, stand = int(n * 0.42), int(n * 0.5)

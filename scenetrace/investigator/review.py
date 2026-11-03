@@ -1,5 +1,3 @@
-"""Optional secondary review in a fresh context. It can block claims; it can never promote one.
-A missing or broken reviewer is reported as not_run or unavailable, never as passed."""
 from __future__ import annotations
 
 import re
@@ -55,7 +53,7 @@ def run_review(ctx: RunContext, *, providers: ProviderSet, store: AnalysisStore,
     shown = {i.evidence.evidence_id for i in raw}
     if any(f.claim_id not in claim_ids or not set(f.evidence_ids) <= shown or not REASON_CODE.fullmatch(f.reason_code)
            for f in audit.findings):
-        return ReviewOutcome(mode=mode, verdict="unavailable")  # unknown IDs or prose codes make the review invalid, not a pass
+        return ReviewOutcome(mode=mode, verdict="unavailable")
     by_claim = {f.claim_id: f for f in audit.findings}
     outcome = ReviewOutcome(mode=mode, findings=[f.model_dump() for f in audit.findings])
     for claim_id in claim_ids:

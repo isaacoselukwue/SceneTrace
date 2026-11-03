@@ -1,12 +1,3 @@
-"""Durable provider-call reservation ledger.
-
-Every provider attempt, including retries, reviews and repairs, reserves its
-worst-case cost here before dispatch. The run, day and total scopes are checked
-in one serialised SQLite transaction, so parallel calls cannot each spend the
-same remaining balance. Unknown outcomes keep their reservation as charged
-until reconciled. Replays add a zero-cost ledger row that points at the
-original call and never touch the spend scopes.
-"""
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -28,7 +19,6 @@ class DurableLedger:
         self.db = db
         self.settings = settings
 
-    # Scope definitions -------------------------------------------------------
     def _scopes(self, ctx: RunContext) -> list[tuple[str, int, int | None]]:
         d = self.settings.defaults
         if ctx.scope == "cold":
@@ -43,7 +33,6 @@ class DurableLedger:
             run = ("spike", 500_000, None)
         return [run, (f"day:{utc_day()}", d["daily_cap_microusd"], None), ("total", d["total_cap_microusd"], None)]
 
-    # Ledger operations ---------------------------------------------------------
     def reserve(self, ctx: RunContext, *, operation: str, model_id: str, upper_bound_microusd: int,
                 attempt: int, paid: bool = True) -> str:
         if upper_bound_microusd < 0:
@@ -126,7 +115,6 @@ class DurableLedger:
                          " finished_at = ? WHERE id = ?", (utc_now(), call_id))
 
     def reconcile_unknown(self, call_id: str, actual_microusd: int, usage: dict | None) -> None:
-        """Replace a retained unknown charge with a provider-confirmed amount."""
         with self.db.write() as conn:
             call = conn.execute("SELECT * FROM provider_calls WHERE id = ?", (call_id,)).fetchone()
             if call is None or call["state"] != "unknown":
@@ -154,7 +142,6 @@ class DurableLedger:
                  ctx.run_mode, dumps(usage), self.settings.rates.revision, utc_now(), utc_now()))
         return call_id
 
-    # Reporting -----------------------------------------------------------------
     def scope_state(self, scope_key: str) -> dict[str, Any] | None:
         row = self.db.one("SELECT * FROM budget_scopes WHERE scope_key = ?", (scope_key,))
         return dict(row) if row is not None else None

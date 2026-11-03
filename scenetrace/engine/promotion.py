@@ -1,11 +1,3 @@
-"""Deterministic event promotion. A model verdict can lower or confirm a candidate's
-status but never overrides the geometry and visibility requirements:
-
-- a target that stayed where it was cannot be picked up (rejected, TARGET_UNCHANGED);
-- a transition hidden by occlusion or unknown coverage is at most plausible;
-- an actor is attached only to a supported event, only when the assessment names
-  a person who is also the unique nearest candidate. Otherwise actor_id is null.
-"""
 from __future__ import annotations
 
 from ..domain import AssessmentResult, Candidate, Coverage, EventRecord, Observation
@@ -22,7 +14,7 @@ def _nearest_actor(candidate: Candidate, cues: dict) -> str | None:
 def promote(*, candidate: Candidate, assessment: AssessmentResult | None, observations: list[Observation],
             coverage: list[Coverage], event_id: str, revision: int, evidence_ids: list[str],
             config: EngineConfig = DEFAULT_ENGINE_CONFIG) -> tuple[EventRecord, dict]:
-    del coverage  # folded into observation states and candidate codes
+    del coverage
     cues = assessment_cue_table(candidate, observations, config)
     codes = set(candidate.reason_codes)
     kind = candidate.candidate_type
@@ -44,7 +36,6 @@ def promote(*, candidate: Candidate, assessment: AssessmentResult | None, observ
         if verdict == "supports":
             codes.add("MODEL_SUPPORT_OVERRULED")
     elif hidden:
-        # The change itself was not visible: never supported, never attributed.
         status, rule = ("rejected", "VISIBLE_CONTRADICTION") if verdict == "contradicts" and not moved and "TARGET_LOST" not in codes \
             else ("plausible", "TRANSITION_NOT_VISIBLE")
         codes.update({"NO_VISIBLE_TRANSITION", "ACTOR_NOT_ESTABLISHED"} if status == "plausible" else set())

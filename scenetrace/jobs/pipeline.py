@@ -1,10 +1,3 @@
-"""Job handlers: normalisation, the cold analysis and warm questions.
-
-Cold: validating -> resolving_target -> tracking -> extracting_candidates ->
-collecting_evidence -> assessing -> compiling. Warm: investigating (bounded
-controller) -> compiled answer. Every stage checks cancellation and the deadline
-before scheduling new work, and partial results are kept with explicit reasons.
-"""
 from __future__ import annotations
 
 import dataclasses
@@ -58,7 +51,6 @@ def proxy_video(svc: Services, clip: dict) -> ProxyVideo:
                       frame_count=clip["proxy_frame_count"], frame_map_sha256=clip["frame_map_sha256"])
 
 
-# Normalisation ----------------------------------------------------------------------
 def run_normalise(svc: Services, job: dict, cancel: CancelToken) -> str:
     clip = svc.store.clip(job["clip_id"])
     emit = svc.events.emitter(job["id"], None)
@@ -89,7 +81,6 @@ def run_normalise(svc: Services, job: dict, cancel: CancelToken) -> str:
     return "completed"
 
 
-# Cold analysis --------------------------------------------------------------------------------
 def _recording_dir(svc: Services, analysis: dict, clip: dict) -> Path:
     source_analysis = analysis["recorded_from"] or analysis["id"]
     return svc.storage.analysis_dir(clip["owner_id"], clip["id"], source_analysis) / "recording"
@@ -261,7 +252,6 @@ def run_analysis(svc: Services, job: dict, cancel: CancelToken) -> str:
     return status
 
 
-# Warm questions --------------------------------------------------------------------------------
 def _call_total(rows: list[dict]) -> tuple[int, str]:
     total, statuses = 0, set()
     for r in rows:
@@ -298,7 +288,6 @@ def run_question(svc: Services, job: dict, cancel: CancelToken) -> str:
     providers = build_providers(svc.settings, svc.db, analysis["run_mode"], recording_dir=_recording_dir(svc, analysis, clip))
     settings = svc.settings
     if analysis["run_mode"] == "recorded_real":
-        # Replays reproduce the historical review whenever one was recorded, whatever the live setting is.
         settings = dataclasses.replace(settings, enable_secondary_review=providers.review_mode != "not_run")
     outcome = run_investigation(ctx, providers=providers, store=svc.store, storage=svc.storage, settings=settings,
                                 analysis_id=analysis["id"], owner_id=analysis["owner_id"], question=inv["question"],

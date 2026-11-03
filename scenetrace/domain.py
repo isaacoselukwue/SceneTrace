@@ -1,26 +1,10 @@
-"""Domain contracts shared by media, providers, the event engine and the investigator.
-
-The record models in reference_core.models (EventRecord, Evidence, Claim,
-AnswerDraft, AuditResult, Plan) are authoritative and re-exported unchanged.
-Application wrappers add run metadata without mutating those records.
-
-Conventions:
-- t_ms: integer milliseconds on the normalised clip timeline (proxy frame k is at
-  round(k * 1000 / proxy_fps)).
-- Boxes: integer pixel rectangles [x0, y0, x1, y1] with exclusive right/bottom in the
-  proxy coordinate system ("proxy_px"). SAM's inclusive x2/y2 are converted at the
-  adapter boundary (meta_sam_parser already returns half-open boxes).
-- Entity IDs: O1 (selected object), P1..Pn (clip-local person tracks), Z1..Zn (zones).
-- Candidate IDs: K1..Kn. Evidence IDs: V1..Vn. Event IDs: E1..En. Claim IDs: C1..Cn.
-- Confidence: integer basis points or None. None is not zero.
-"""
 from __future__ import annotations
 
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from reference_core.models import (  # noqa: F401  (re-exported contracts)
+from reference_core.models import (  # noqa: F401
     AnswerDraft,
     AuditFinding,
     AuditResult,
@@ -50,7 +34,6 @@ ReasonCode = Literal[
     "CLEAR_LIFT", "CLEAR_RELEASE", "STABLE_AFTER", "POSSIBLE_OCCLUSION", "INCOMPLETE_COVERAGE",
     "COMPETING_ACTORS", "TRACK_FRAGMENTED", "SMALL_TARGET", "NO_VISIBLE_TRANSITION", "TARGET_UNCHANGED",
 ]
-# Engine-only codes may appear in EventRecord.reason_codes and candidate cues.
 ENGINE_CODES = (
     "PROXIMITY_ONLY", "TARGET_STATIONARY", "TARGET_MOVED", "TARGET_LOST", "ACTOR_NOT_ESTABLISHED",
     "MODEL_SUPPORT_OVERRULED", "ASSESSMENT_UNAVAILABLE", "PARTIAL_SCOPE", "BOUNDARY_WINDOW",
@@ -62,7 +45,6 @@ class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-# Media ---------------------------------------------------------------------
 class FrameMapEntry(Strict):
     proxy_frame_index: int = Field(ge=0)
     t_ms: int = Field(ge=0)
@@ -76,10 +58,10 @@ class FrameMap(Strict):
     proxy_fps: int
     proxy_width: int
     proxy_height: int
-    source_width: int  # displayed size after rotation
+    source_width: int
     source_height: int
     rotation_deg: int
-    source_time_base: str  # e.g. "1/12800"
+    source_time_base: str
     source_variable_frame_rate: bool
     entries: list[FrameMapEntry]
 
@@ -87,14 +69,11 @@ class FrameMap(Strict):
         return self.entries[proxy_frame_index]
 
     def frame_for_t_ms(self, t_ms: int) -> int:
-        """Nearest proxy frame for a clip time, clamped to the clip."""
         k = round(t_ms * self.proxy_fps / 1000)
         return max(0, min(len(self.entries) - 1, k))
 
 
 class ProxyVideo(Strict):
-    """A normalised proxy registered for a clip. Paths are absolute server paths, never sent to clients."""
-
     clip_id: str
     owner_id: str
     path: str
@@ -106,15 +85,12 @@ class ProxyVideo(Strict):
     frame_map_sha256: str
 
 
-# Tracking ------------------------------------------------------------------
 class ConceptPrompt(Strict):
     kind: Literal["concept"] = "concept"
     phrase: str = Field(min_length=1, max_length=60)
 
 
 class BoxPrompt(Strict):
-    """Seed one object with a box on one proxy frame (exclusive right/bottom, proxy pixels)."""
-
     kind: Literal["box"] = "box"
     object_id: int = 1
     frame_index: int = Field(ge=0)
@@ -123,17 +99,15 @@ class BoxPrompt(Strict):
 
 
 class ProviderBox(Strict):
-    """One provider record after parsing, in proxy pixels, exclusive right/bottom."""
-
     proxy_frame_index: int
     provider_object_id: str
     box: BoxXYXY
     frame_width: int
     frame_height: int
     confidence_bp: int | None
-    mask_svg: str | None = None  # SVG path in proxy pixel coordinates
+    mask_svg: str | None = None
     mask_area_px: int | None = None
-    mask_centroid_milli: tuple[int, int] | None = None  # centroid x/y * 1000
+    mask_centroid_milli: tuple[int, int] | None = None
 
 
 class Coverage(Strict):
@@ -143,7 +117,7 @@ class Coverage(Strict):
     requested_start_frame: int
     requested_end_frame: int
     terminal_status: Literal["completed", "incomplete", "failed", "not_run"]
-    missing_ranges: list[tuple[int, int]] = []  # inclusive proxy frame ranges whose state is unknown
+    missing_ranges: list[tuple[int, int]] = []
 
 
 class TrackingResult(Strict):
@@ -175,13 +149,13 @@ class Observation(Strict):
     analysis_id: str
     request_key: str
     entity_id: str
-    track_key: str  # f"{clip_id}:{request_key}:{concept}:{provider_object_id}"
+    track_key: str
     proxy_frame_index: int
     t_ms: int
     width_px: int
     height_px: int
     box: BoxXYXY | None
-    centre_milli: tuple[int, int] | None  # mask centroid if available, else box centre, * 1000
+    centre_milli: tuple[int, int] | None
     mask_svg: str | None
     mask_area_px: int | None
     provider_confidence_bp: int | None
@@ -205,14 +179,13 @@ class Entity(Strict):
     identity_warning: bool = False
 
 
-# Event engine ----------------------------------------------------------------
 class Candidate(Strict):
     candidate_id: CandidateId
     candidate_type: EventType
     object_id: str = "O1"
     t_start_ms: int
     t_end_ms: int
-    window_start_ms: int  # evidence window, normally 1.5 s either side, clamped
+    window_start_ms: int
     window_end_ms: int
     actor_candidates: list[PersonId] = []
     zone_id: ZoneId | None = None
@@ -222,8 +195,6 @@ class Candidate(Strict):
 
 
 class EvidenceItem(Strict):
-    """Application wrapper around reference_core Evidence with frame mapping and asset IDs."""
-
     evidence: Evidence
     asset_id: str
     candidate_id: str | None
@@ -237,7 +208,10 @@ class EvidenceItem(Strict):
 
 
 class AssessmentResult(Strict):
-    """Closed structured assessment of one candidate. Never rendered as prose."""
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"description": "Closed structured assessment of one candidate. Never rendered as prose."},
+    )
 
     candidate_id: CandidateId
     object_id: str
@@ -271,12 +245,11 @@ class AssessmentRecord(Strict):
 class EventRevision(Strict):
     record: EventRecord
     candidate_id: str | None
-    basis: dict[str, str | int | list[str] | None]  # assessment ids, rule outcome codes
+    basis: dict[str, str | int | list[str] | None]
     record_sha256: str
     created_at: str
 
 
-# Usage ---------------------------------------------------------------------
 class UsageRecord(Strict):
     provider_call_id: str
     operation: str

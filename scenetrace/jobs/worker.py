@@ -1,5 +1,3 @@
-"""One bounded inference worker. Jobs are claimed in a SQLite transaction; a restart marks
-running jobs interrupted instead of silently resending billed work."""
 from __future__ import annotations
 
 import threading
@@ -61,12 +59,11 @@ class Worker:
             return dict(row)
 
     def maintain(self) -> None:
-        """Expire private clips past retention and retry pending remote file deletions."""
         from .cleanup import cleanup_remote_files, expire_clips
         try:
             expire_clips(self.svc)
             cleanup_remote_files(self.svc)
-        except Exception:  # noqa: BLE001 - maintenance must never stop the worker
+        except Exception:  # noqa: BLE001
             log.exception("maintenance failed")
 
     def _loop(self) -> None:
@@ -78,7 +75,7 @@ class Worker:
                 self.maintain()
             try:
                 job = self._claim()
-            except Exception:  # noqa: BLE001 - keep the worker alive on transient database errors
+            except Exception:  # noqa: BLE001
                 log.exception("job claim failed")
                 job = None
             if job is None:
@@ -112,7 +109,7 @@ class Worker:
             self._finish(job, "failed", "job.failed", "PROVIDER_ERROR", f"The model service returned an error ({exc.code}).")
         except AppError as exc:
             self._finish(job, "failed", "job.failed", exc.code, exc.message)
-        except Exception:  # noqa: BLE001 - sanitised failure; details stay in the private log
+        except Exception:  # noqa: BLE001
             log.error("job failed: %s", traceback.format_exc(limit=8), extra={"job_id": job["id"]})
             self._finish(job, "failed", "job.failed", "INTERNAL_ERROR", "The job failed unexpectedly. Partial results were kept.")
         finally:
@@ -129,7 +126,6 @@ class Worker:
             terminal = {"interrupted": "interrupted", "cancelled": "cancelled", "failed": "failed", "partial": "partial",
                         "completed": "completed", "needs_selection": "needs_selection"}[state]
             if job.get("analysis_id") and job["kind"] == "analysis":
-                # The pipeline sets completed/partial/needs_selection itself; the worker only closes runs it left open.
                 conn.execute("UPDATE analyses SET status = ? WHERE id = ? AND status IN ('queued', 'running')",
                              (terminal, job["analysis_id"]))
             if job.get("investigation_id"):

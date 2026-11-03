@@ -1,8 +1,3 @@
-"""Inspect an upload with ffprobe before any expensive work.
-
-Only local MP4/MOV files are read (mov demuxer, file protocol only), so crafted
-inputs cannot make the tools fetch network resources.
-"""
 from __future__ import annotations
 
 import json
@@ -43,7 +38,7 @@ class ProbeResult:
     codec: str
     coded_width: int
     coded_height: int
-    width: int  # displayed, after rotation
+    width: int
     height: int
     rotation_deg: int
     duration_ms: int
@@ -53,7 +48,7 @@ class ProbeResult:
     frame_count: int
     has_audio: bool
     time_base: str
-    frame_pts: tuple[int, ...]  # presentation timestamps of decoded frames, in time_base units
+    frame_pts: tuple[int, ...]
 
 
 def _fraction(text: str | None) -> Fraction | None:

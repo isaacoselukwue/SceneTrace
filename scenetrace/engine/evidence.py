@@ -1,9 +1,3 @@
-"""Evidence frames for a candidate, taken from the original upload through the frame map.
-
-Interaction candidates get up to six raw frames (two before, two during, two after).
-Raw frames are never drawn on: each has a separate annotated copy with neutral
-O1/P1 boxes, registered and hashed as a derived asset.
-"""
 from __future__ import annotations
 
 import shutil

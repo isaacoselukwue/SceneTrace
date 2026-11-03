@@ -1,5 +1,3 @@
-// Capture README screenshots from a running SceneTrace server (default http://127.0.0.1:8765).
-// Usage: node scripts/capture-screens.mjs <owned-analysis-id>   (run from client/)
 import { chromium } from "@playwright/test";
 
 const base = process.env.SCENETRACE_URL ?? "http://127.0.0.1:8765";

@@ -1,18 +1,3 @@
-"""Record and replay at the transport boundary.
-
-Live runs wrap MetaTransport in RecordingTransport, which stores every request
-digest and response under the analysis directory. A recorded_real run uses
-ReplayTransport, which serves those responses by request digest and never
-opens a network connection. The same adapter code therefore runs in live and
-replay modes; a replay miss raises RecordingMiss instead of calling a model.
-
-Ledger handling: adapters call `dispatch_call`, which meters live attempts
-through `metered_call` and writes zero-cost `replayed` ledger rows in replay.
-
-Every request opts out of provider-side storage with `store: false`. SAM requests
-recorded before they carried that flag were indexed without it; the flag only
-controls retention, so replay falls back to the digest without it.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -37,13 +22,12 @@ def _pixels_key(data_url: str) -> str:
     from PIL import Image
     try:
         image = Image.open(io.BytesIO(base64.b64decode(data_url.split(",", 1)[1]))).convert("RGB")
-    except Exception:  # noqa: BLE001 - an undecodable image is keyed by its bytes
+    except Exception:  # noqa: BLE001
         return "bytes:" + hashlib.sha256(data_url.encode()).hexdigest()
     return f"pixels:{image.width}x{image.height}:" + hashlib.sha256(image.tobytes()).hexdigest()
 
 
 def _normalise(value: Any) -> Any:
-    """Replace image data URLs with a hash of their decoded pixels for request matching."""
     if isinstance(value, str) and value.startswith("data:image/"):
         return _pixels_key(value)
     if isinstance(value, list):
@@ -58,8 +42,6 @@ def body_digest(kind: str, body: Any) -> str:
 
 
 class Recording:
-    """An append-only index of transport exchanges stored in one directory."""
-
     def __init__(self, directory: Path) -> None:
         self.directory = directory
         self.index_path = directory / "index.jsonl"
@@ -95,8 +77,6 @@ class Recording:
 
 
 class RecordingTransport:
-    """Pass-through to the live transport that also records each exchange."""
-
     def __init__(self, inner: MetaTransport, recording: Recording) -> None:
         self.inner = inner
         self.recording = recording
@@ -133,8 +113,6 @@ class RecordingTransport:
 
 
 class ReplayTransport:
-    """Serves recorded responses by request digest. Never opens a network connection."""
-
     def __init__(self, recording: Recording) -> None:
         self.recording = recording
         self._seen: dict[str, int] = {}
@@ -154,7 +132,7 @@ class ReplayTransport:
         return HTTPResult(entry["status"], data, entry.get("request_id"), 0)
 
     def delete_file(self, file_id: str) -> int:
-        return 200  # nothing remote exists for a replay
+        return 200
 
     def count_input_tokens(self, body: dict[str, Any]) -> HTTPResult:
         entry, data = self._next("responses.input_tokens", body)
@@ -179,9 +157,8 @@ class ReplayTransport:
 
 def dispatch_call(ctx: RunContext, *, operation: str, model_id: str, upper_bound_microusd: int,
                   dispatch: Callable[[], CallOutcome], attempt: int = 1, paid: bool = True) -> tuple[Any, str]:
-    """Meter a live attempt, or record a zero-cost replay row in recorded_real mode."""
     if ctx.run_mode == "recorded_real":
-        outcome = dispatch()  # ReplayTransport underneath; raises RecordingMiss on a miss
+        outcome = dispatch()
         call_id = ctx.ledger.record_replay(ctx, operation=operation, model_id=model_id, original_call={
             "provider_call_id": outcome.response_id, "actual_microusd": outcome.actual_microusd,
             "cost_status": "provider_usage_based" if outcome.usage is not None else "unknown", "usage": outcome.usage})

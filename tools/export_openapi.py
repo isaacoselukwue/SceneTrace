@@ -1,4 +1,3 @@
-"""Write the backend OpenAPI document used to generate the client's TypeScript types."""
 from __future__ import annotations
 
 import json

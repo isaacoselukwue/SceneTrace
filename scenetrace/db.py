@@ -1,8 +1,3 @@
-"""SQLite access: WAL, foreign keys, ordered migrations and serialised write transactions.
-
-One application process owns the database. Writes take a process lock plus
-BEGIN IMMEDIATE so reservations and job claims are atomic.
-"""
 from __future__ import annotations
 
 import json
@@ -44,7 +39,6 @@ class Database:
 
     @contextmanager
     def write(self) -> Iterator[sqlite3.Connection]:
-        """Serialised write transaction. Nested use re-enters the same transaction."""
         conn = self.conn()
         with self._write_lock:
             depth = getattr(self._local, "depth", 0)
@@ -70,7 +64,6 @@ class Database:
         return self.conn().execute(sql, params).fetchone()
 
     def require(self, sql: str, params: tuple[Any, ...] | dict[str, Any] = (), what: str = "record") -> sqlite3.Row:
-        """Like one(), but a missing row is a clean not-found error rather than a crash."""
         row = self.one(sql, params)
         if row is None:
             from .errors import not_found
@@ -101,7 +94,6 @@ class Database:
 
 
 def dumps(value: Any) -> str:
-    """Stable JSON for storage columns (not the integrity encoding)."""
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 

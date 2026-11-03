@@ -1,4 +1,3 @@
-"""The published demonstrations replay offline and reproduce the outcomes of their recorded live runs."""
 from __future__ import annotations
 
 import json

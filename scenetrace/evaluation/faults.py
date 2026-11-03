@@ -1,10 +1,3 @@
-"""Planted-fault and clean-control cases built from recorded real run records.
-
-Each case is one claim checked in isolation. Faults are deliberate mutations of
-claims about real stored events (six categories, five cases each); clean controls
-reproduce stored events exactly. These are mutations of a small number of records,
-not independent scenes.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -21,7 +14,7 @@ CATEGORIES = ("actor_substitution", "time_substitution", "wrong_predicate_or_cit
 @dataclass
 class Case:
     case_id: str
-    category: str  # one of CATEGORIES, or "clean"
+    category: str
     analysis_id: str
     claim: Claim
     note: str
@@ -36,7 +29,6 @@ def _claim(record: Any, **changes: Any) -> Claim:
 
 
 def build_cases(store: AnalysisStore, pickup: str, occlusion: str) -> tuple[list[Case], list[Case]]:
-    """Cases checked against the current records; the stale-revision cases are built after revisions are appended."""
     p = {k: v.record for k, v in store.current_events(pickup).items()}
     o = {k: v.record for k, v in store.current_events(occlusion).items()}
     lift = next(r for r in p.values() if r.event_type == "pick_up" and r.status == "supported")
@@ -89,7 +81,6 @@ def build_cases(store: AnalysisStore, pickup: str, occlusion: str) -> tuple[list
 
 
 def append_revisions(store: AnalysisStore, pickup: str, occlusion: str) -> tuple[list[Case], list[Case]]:
-    """Append an unchanged revision to five events, then build stale-revision faults and fresh-revision controls."""
     stale, fresh = [], []
     targets = [(pickup, "pick_up", "supported"), (pickup, "first_seen", None), (pickup, "last_seen", None),
                (occlusion, "first_seen", None), (occlusion, "last_seen", None)]
@@ -105,7 +96,6 @@ def append_revisions(store: AnalysisStore, pickup: str, occlusion: str) -> tuple
 
 
 def validator_verdict(store: AnalysisStore, case: Case, owner_id: str, source_sha256: str) -> tuple[bool, str | None]:
-    """Returns (blocked, reason_code)."""
     compiled = compile_draft(AnswerDraft(claims=[case.claim], unknown_codes=[]), store=store, storage=store.storage,
                              analysis_id=case.analysis_id, owner_id=owner_id, object_id="O1", source_sha256=source_sha256,
                              snapshot=store.snapshot(case.analysis_id)["event_revisions"], allowed=set(), scope=[])

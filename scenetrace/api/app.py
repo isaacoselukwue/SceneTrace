@@ -1,4 +1,3 @@
-"""FastAPI application: one process serving the API, the job stream and the built client."""
 from __future__ import annotations
 
 import asyncio
@@ -98,7 +97,6 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         log.error("unhandled error: %s", type(exc).__name__, extra={"request_id": getattr(request.state, "request_id", None)})
         return _error("INTERNAL_ERROR", "Something went wrong on the server.", 500, request)
 
-    # Dependencies ---------------------------------------------------------------------------
     def session(request: Request) -> Session | None:
         return sessions.get(request.cookies.get(SESSION_COOKIE))
 
@@ -169,7 +167,6 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         if missing:
             raise AppError("LIVE_DISABLED", "Live inference is unavailable: " + "; ".join(missing) + ".", status_code=503)
 
-    # Health, session and capabilities ---------------------------------------------------------
     @app.get(f"{API}/health", response_model=S.HealthOut)
     def health() -> S.HealthOut:
         return S.HealthOut(status="ok")
@@ -268,7 +265,6 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                                  questions=questions, poster_url=views.asset_url(poster)))
         return out
 
-    # Clips ----------------------------------------------------------------------------------------
     @app.post(f"{API}/clips", response_model=S.ClipOut, status_code=201)
     async def upload_clip(request: Request, s: Session = Depends(mutation)) -> S.ClipOut:
         upload_started = time.monotonic()
@@ -329,7 +325,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
             state["fh"].close()
             shutil.rmtree(tmp, ignore_errors=True)
             raise
-        except Exception as exc:  # noqa: BLE001 - malformed multipart bodies are client errors
+        except Exception as exc:  # noqa: BLE001
             state["fh"].close()
             shutil.rmtree(tmp, ignore_errors=True)
             raise AppError("INVALID_ARGUMENT", "The upload could not be read.", status_code=400) from exc
@@ -398,7 +394,6 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         delete_clip(svc, clip)
         return Response(status_code=204)
 
-    # Analyses --------------------------------------------------------------------------------------
     @app.post(f"{API}/clips/{{clip_id}}/analyses", response_model=S.JobAccepted, status_code=202)
     def create_analysis(clip_id: str, body: S.AnalysisCreate, s: Session = Depends(mutation)) -> S.JobAccepted:
         clip = clip_row(clip_id, s)
@@ -505,7 +500,6 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                                spans=views.visibility_spans(states, frame_count=clip["proxy_frame_count"] or 0,
                                                             fps=clip["proxy_fps"] or 10, duration_ms=clip["duration_ms"] or 0))
 
-    # Questions ---------------------------------------------------------------------------------------
     @app.post(f"{API}/analyses/{{analysis_id}}/questions", response_model=S.JobAccepted, status_code=202)
     def ask(analysis_id: str, body: S.QuestionCreate, s: Session = Depends(mutation)) -> S.JobAccepted:
         a = analysis_row(analysis_id, s)
@@ -542,7 +536,6 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         analysis_row(row["analysis_id"], s)
         return views.investigation_out(svc, dict(row))
 
-    # Jobs and events -------------------------------------------------------------------------------------
     @app.get(f"{API}/jobs/{{job_id}}", response_model=S.JobOut)
     def get_job(job_id: str, s: Session | None = Depends(session)) -> S.JobOut:
         return views.job_out(job_row(job_id, s))
@@ -587,7 +580,7 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
                     continue
                 state = await asyncio.to_thread(lambda: svc.db.require("SELECT state FROM jobs WHERE id = ?", (job_id,), "job")["state"])
                 if state in ("completed", "partial", "failed", "cancelled", "interrupted", "needs_selection"):
-                    return  # nothing newer to send for a finished job
+                    return
                 await asyncio.sleep(0.25)
                 idle += 0.25
                 if idle >= 15:
@@ -597,7 +590,6 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         return StreamingResponse(stream(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
-    # Assets -----------------------------------------------------------------------------------------------
     @app.get(f"{API}/assets/{{asset_id}}")
     def get_asset(asset_id: str, s: Session | None = Depends(session)) -> FileResponse:
         row = svc.storage.asset_row(asset_id, s.owner_id if s else None)
@@ -610,7 +602,6 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
             headers["Content-Disposition"] = f'attachment; filename="{path.name}"'
         return FileResponse(path, media_type=media, headers=headers)
 
-    # Exports --------------------------------------------------------------------------------------------
     def export_out(row: dict) -> S.ExportOut:
         trusted = svc.db.one("SELECT head_digest, source FROM trusted_heads WHERE export_id = ?", (row["id"],))
         return S.ExportOut(export_id=row["id"], analysis_id=row["analysis_id"], status=row["status"], head_digest=row["head_digest"],
@@ -674,7 +665,6 @@ def create_app(settings: Settings | None = None, *, start_worker: bool = True) -
         return S.VerifyOut(export_id=export_id, integrity=result["integrity"], anchored=result["anchored"],
                            anchor_source=result["anchor_source"], head=result["head"], errors=result["errors"], note=note)
 
-    # Built client ------------------------------------------------------------------------------------------
     if (CLIENT_DIST / "index.html").is_file():
         @app.get("/{path:path}", include_in_schema=False)
         def client(path: str) -> Response:

@@ -1,4 +1,3 @@
-"""Extract original-resolution source frames named by the frame map."""
 from __future__ import annotations
 
 import shutil
@@ -12,7 +11,6 @@ from .proc import MediaToolError, run, tool
 
 def extract_source_frames(source: Path, frame_map: FrameMap, proxy_frame_indices: list[int], out_dir: Path, *,
                           cancel: CancelToken | None = None) -> dict[int, Path]:
-    """Return {proxy_frame_index: PNG path}. Frames come from the original upload, not the proxy."""
     out_dir.mkdir(parents=True, exist_ok=True)
     wanted = {p: frame_map.entry(p).source_frame_index for p in proxy_frame_indices}
     sources = sorted(set(wanted.values()))

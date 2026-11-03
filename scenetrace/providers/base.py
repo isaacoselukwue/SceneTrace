@@ -1,13 +1,3 @@
-"""Provider protocols, run context and the metering wrapper.
-
-Three implementations exist: the real Meta adapter (live), the recorded-result
-reader (recorded_real) and the synthetic fixture adapter (fixture). Mode is
-immutable for a run. Fixture never touches the network; replay never runs a
-model; live never substitutes synthetic results after an error.
-
-Every paid provider attempt goes through `metered_call`, which reserves the
-worst-case cost in the durable ledger before dispatch and settles it afterwards.
-"""
 from __future__ import annotations
 
 import threading
@@ -51,8 +41,6 @@ class CancelToken:
 
 
 class Ledger(Protocol):
-    """Durable reservation ledger (implemented in scenetrace/budget.py)."""
-
     def reserve(self, ctx: RunContext, *, operation: str, model_id: str, upper_bound_microusd: int,
                 attempt: int, paid: bool = True) -> str: ...
 
@@ -79,10 +67,9 @@ class RunContext:
     deadline_monotonic: float | None = None
     cancel: CancelToken = field(default_factory=CancelToken)
     emit: Callable[[str, dict[str, Any]], None] = lambda event_type, payload: None
-    recorder: Any = None  # providers.recording.Recorder when live calls are being recorded
+    recorder: Any = None
 
     def checkpoint(self) -> None:
-        """Call before scheduling any new provider or media work."""
         self.cancel.check()
         if self.deadline_monotonic is not None and time.monotonic() >= self.deadline_monotonic:
             raise DeadlineExceeded()
@@ -94,8 +81,6 @@ class RunContext:
 
 
 class ProviderError(Exception):
-    """A sanitised provider failure. `retryable` marks transient errors eligible for one retry."""
-
     def __init__(self, code: str, *, http_status: int | None = None, retryable: bool = False,
                  retry_after_s: float | None = None, request_id: str | None = None,
                  ambiguous: bool = False, detail: str | None = None) -> None:
@@ -105,16 +90,16 @@ class ProviderError(Exception):
         self.retryable = retryable
         self.retry_after_s = retry_after_s
         self.request_id = request_id
-        self.ambiguous = ambiguous  # provider work may have run and been billed
+        self.ambiguous = ambiguous
         self.detail = detail
 
 
 class ProviderUnavailable(ProviderError):
-    """Model access missing (403/404 model_not_found) or no key configured."""
+    pass
 
 
 class RecordingMiss(ProviderError):
-    """Replay found no recorded result for a request. Replay never falls back to a model."""
+    pass
 
 
 @dataclass
@@ -129,13 +114,6 @@ class CallOutcome:
 
 def metered_call(ctx: RunContext, *, operation: str, model_id: str, upper_bound_microusd: int,
                  dispatch: Callable[[], CallOutcome], attempt: int = 1, paid: bool = True) -> tuple[Any, str]:
-    """Reserve, dispatch once, settle. Returns (value, provider_call_id).
-
-    A BudgetExceeded from the ledger means no call was made. A timeout or
-    ambiguous disconnect keeps the reservation with cost_status=unknown. This
-    helper never retries; callers decide on at most one eligible retry, which is
-    a new reservation and a new ledger entry.
-    """
     ctx.checkpoint()
     call_id = ctx.ledger.reserve(ctx, operation=operation, model_id=model_id,
                                  upper_bound_microusd=upper_bound_microusd, attempt=attempt, paid=paid)
@@ -154,7 +132,6 @@ def metered_call(ctx: RunContext, *, operation: str, model_id: str, upper_bound_
             ctx.ledger.settle(call_id, actual_microusd=None, usage=None, request_id=exc.request_id, response_id=None,
                               http_status=exc.http_status, elapsed_ms=elapsed, error_code=exc.code)
         else:
-            # The provider rejected the request before doing billable work.
             ctx.ledger.settle(call_id, actual_microusd=0, usage=None, request_id=exc.request_id, response_id=None,
                               http_status=exc.http_status, elapsed_ms=elapsed, error_code=exc.code)
         raise
@@ -170,7 +147,6 @@ def metered_call(ctx: RunContext, *, operation: str, model_id: str, upper_bound_
     return outcome.value, call_id
 
 
-# Provider roles ----------------------------------------------------------------
 class Tracker(Protocol):
     model_id: str
 
@@ -192,16 +168,16 @@ class Assessor(Protocol):
 class FunctionCall:
     call_id: str
     name: str
-    arguments: str  # raw JSON text; validated by the controller before dispatch
+    arguments: str
 
 
 @dataclass
 class ModelTurn:
     response_id: str | None
     function_calls: list[FunctionCall]
-    text: str | None  # prose is never published; it triggers a structured repair
+    text: str | None
     status: str
-    output_items: list[dict[str, Any]] = field(default_factory=list)  # replayed verbatim as history next turn
+    output_items: list[dict[str, Any]] = field(default_factory=list)
 
 
 class InvestigatorModel(Protocol):
@@ -223,8 +199,6 @@ class Reviewer(Protocol):
 
 @dataclass
 class ProviderSet:
-    """The immutable provider bundle for one run mode."""
-
     run_mode: RunMode
     tracker: Tracker
     assessor: Assessor

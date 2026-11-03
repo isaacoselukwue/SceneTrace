@@ -1,13 +1,3 @@
-"""Live provider capability check for SceneTrace.
-
-Runs a small, capped set of real Meta Model API checks using the server-side
-MODEL_API_KEY and writes reports/provider-capabilities.json. The key is never
-printed or persisted. Media used here is the clearly synthetic rendered test
-clip from tools/render_synthetic_clip.py, so sanitised raw outputs may be kept
-as parser fixtures.
-
-Usage: python tools/provider_spike.py --clip samples/synthetic/synthetic_bench_pickup.mp4
-"""
 from __future__ import annotations
 
 import argparse
@@ -30,7 +20,7 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 BASE_URL = "https://api.meta.ai/v1"
 MODELS = {"tracking": "sam-3.1", "investigator": "muse-spark-1.3", "reviewer": "muse-wonder-1.0"}
-SPEND_CAP_MICROUSD = 400_000  # hard cap for the whole spike
+SPEND_CAP_MICROUSD = 400_000
 
 
 def load_key() -> str:
@@ -75,7 +65,6 @@ class Spike:
         print(f"[{fields.get('status')}] {name}", {k: v for k, v in fields.items() if k in ("elapsed_ms", "usage", "error", "detail")})
 
     def stream_events(self, body: dict[str, Any]) -> tuple[httpx.Response | None, list[dict[str, Any]], int]:
-        """POST a streaming Responses request and return (response, events, elapsed_ms)."""
         started = time.monotonic()
         events: list[dict[str, Any]] = []
         with self.client.stream("POST", "/responses", json=body, headers={"Accept": "text/event-stream"}) as resp:
@@ -184,7 +173,6 @@ def main() -> None:
     still = frame_png(args.clip, 1.0, tmp / "still.png")
     lift = frame_png(args.clip, 14.2, tmp / "lift.png")
 
-    # 1. SAM image, concept prompt.
     body = {"model": MODELS["tracking"], "stream": True,
             "metadata": {"mask_encoding": "one_bit", "include_confidence": "true"},
             "input": [{"type": "message", "role": "user", "content": [
@@ -202,7 +190,6 @@ def main() -> None:
                              "diagnostics": [d.code for d in result.diagnostics], "outcome": result.outcome.status})
         (fixtures / "sam_image_bottle.events.json").write_text(json.dumps(events), encoding="utf-8")
 
-    # 2. SAM video via Files API, using a 10 fps proxy.
     proxy = tmp / "proxy.mp4"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(args.clip), "-vf", "fps=10", "-an", "-c:v", "libx264",
                     "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(proxy)], check=True, timeout=300)
@@ -243,7 +230,6 @@ def main() -> None:
                                  "diagnostics": [d.code for d in result.diagnostics], "outcome": result.outcome.status})
             (fixtures / f"sam_video_{concept}.events.json").write_text(json.dumps(events), encoding="utf-8")
 
-    # 3. Token count bound for an image request, then Muse Spark structured image assessment.
     content = [{"type": "input_text", "text": "Neutral check of a drawn test frame. Report only what is visible."},
                {"type": "input_image", "image_url": data_url(lift)}]
     count_body = {"model": MODELS["investigator"], "input": [{"type": "message", "role": "user", "content": content}]}
@@ -286,7 +272,6 @@ def main() -> None:
                      response_id=data.get("id"), usage=data.get("usage"), detail={"parsed": parsed, "locally_valid": valid,
                                                                                   "response_status": data.get("status")})
 
-    # 4. One ordinary function-tool turn with tool_choice auto, then the tool result round trip.
     tools = [{"type": "function", "name": "read_history", "description": "Read stored revisions for the selected object. No provider work.",
               "strict": True, "parameters": {"type": "object", "properties": {"object_id": {"type": "string", "pattern": "^O[1-9][0-9]*$"}},
                                              "required": ["object_id"], "additionalProperties": False}}]
@@ -320,7 +305,6 @@ def main() -> None:
                                  "second_status": d2.get("status"), "second_output_types": [i.get("type") for i in d2.get("output", [])]},
                          error=None if ok else sanitise_error(second))
 
-    # 5. Remote cleanup.
     if file_id:
         dele = spike.client.delete(f"/files/{file_id}")
         after = spike.client.get(f"/files/{file_id}")

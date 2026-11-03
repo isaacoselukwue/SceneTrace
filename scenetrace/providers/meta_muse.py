@@ -1,11 +1,3 @@
-"""Muse Spark (assessment, intent, investigator turns) and Muse Wonder (secondary review) adapters.
-
-Every paid call is bounded before dispatch: the rendered input is counted with
-POST /v1/responses/input_tokens (an upper bound on billed input, because Meta's
-injected steering tokens are counted but not billed), and the reservation covers
-that count plus the full output budget, reasoning included. Model output is
-parsed again locally with strict pydantic models; it never becomes prose in the UI.
-"""
 from __future__ import annotations
 
 import base64
@@ -34,7 +26,6 @@ def runtime_prompt(name: str) -> str:
 
 
 def image_part(png: bytes) -> dict[str, str]:
-    """A data-URL image part, downscaled for the model when larger than 1280 px. The stored frame is unchanged."""
     image = Image.open(io.BytesIO(png))
     if max(image.size) > MAX_IMAGE_EDGE:
         image.thumbnail((MAX_IMAGE_EDGE, MAX_IMAGE_EDGE))
@@ -132,8 +123,6 @@ class MetaInvestigatorModel(_MuseCaller):
 
     def turn(self, ctx: RunContext, *, instructions: str, input_items: list[dict[str, Any]],
              previous_response_id: str | None, tools: list[dict[str, Any]]) -> ModelTurn:
-        # Stateless history: the caller replays prior output items (with encrypted reasoning) instead of
-        # chaining previous_response_id, so nothing about the conversation is stored by the provider.
         body: dict[str, Any] = {"instructions": instructions, "input": input_items, "tools": tools, "tool_choice": "auto",
                                 "parallel_tool_calls": False, "max_output_tokens": 3000, "reasoning": {"effort": "low"},
                                 "store": False, "include": ["reasoning.encrypted_content"]}
@@ -175,7 +164,6 @@ class MetaReviewer(_MuseCaller):
 
 
 def load_frames(storage: Any, owner_id: str, items: list[EvidenceItem]) -> dict[str, bytes]:
-    """Raw evidence bytes, digest-checked against the registered asset."""
     out: dict[str, bytes] = {}
     for item in items:
         path, _media = storage.asset_path(item.asset_id, owner_id, verify_digest=True)

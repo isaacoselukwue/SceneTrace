@@ -1,6 +1,3 @@
-// Fixed plain-language explanations for structured reason codes. These are server-defined codes,
-// never model prose, so the wording here is the only text a reason code can produce.
-
 const REASONS: Record<string, string> = {
   PROXIMITY_ONLY: "A person came close, but closeness is not evidence of contact.",
   TARGET_STATIONARY: "The object stayed where it was while the person was near.",

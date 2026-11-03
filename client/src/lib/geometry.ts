@@ -1,5 +1,3 @@
-// Letterbox-aware mapping between the displayed media rectangle and proxy pixels.
-
 export interface Rect {
   x: number;
   y: number;
@@ -7,7 +5,6 @@ export interface Rect {
   height: number;
 }
 
-/** The rectangle a media of mediaW x mediaH occupies inside a box with object-fit: contain. */
 export function containRect(boxW: number, boxH: number, mediaW: number, mediaH: number): Rect {
   if (boxW <= 0 || boxH <= 0 || mediaW <= 0 || mediaH <= 0) return { x: 0, y: 0, width: 0, height: 0 };
   const scale = Math.min(boxW / mediaW, boxH / mediaH);
@@ -16,7 +13,6 @@ export function containRect(boxW: number, boxH: number, mediaW: number, mediaH: 
   return { x: (boxW - width) / 2, y: (boxH - height) / 2, width, height };
 }
 
-/** Map a point inside the box to integer proxy pixels, or null when it falls in the letterbox bars. */
 export function toMediaPixel(
   px: number,
   py: number,
@@ -30,7 +26,6 @@ export function toMediaPixel(
   return { x: Math.min(mediaW - 1, Math.max(0, x)), y: Math.min(mediaH - 1, Math.max(0, y)) };
 }
 
-/** Normalise a dragged box to [x0, y0, x1, y1] with exclusive right/bottom edges. */
 export function boxFromDrag(a: { x: number; y: number }, b: { x: number; y: number }, mediaW: number, mediaH: number) {
   const x0 = Math.max(0, Math.min(a.x, b.x));
   const y0 = Math.max(0, Math.min(a.y, b.y));
@@ -49,7 +44,6 @@ export interface LabelRequest {
   width: number;
 }
 
-/** Place labels in priority order beside or inside their boxes without overlapping; a label with no free spot is left out. */
 export function placeLabels(requests: LabelRequest[], labelHeight: number, frameW: number, frameH: number): Map<string, { x: number; y: number }> {
   const placed = new Map<string, { x: number; y: number }>();
   const taken: Rect[] = [];

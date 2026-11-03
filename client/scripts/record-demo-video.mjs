@@ -1,7 +1,3 @@
-// Record the demonstration video from a running SceneTrace server (http://127.0.0.1:8765 by default).
-// The screen recording is real: live analysis and the live question call Meta Model API.
-// Usage (from client/): node scripts/record-demo-video.mjs <out-dir> <launch-transcript.json>
-// Produces <out-dir>/raw.webm and <out-dir>/markers.json; tools/assemble_video.py makes the final MP4.
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -58,7 +54,6 @@ async function open(hash) {
   await page.waitForLoadState("networkidle");
 }
 
-// A. Title and how it works.
 await card(`<h1>SceneTrace</h1><h2>Follow the object. Check the evidence.</h2>
   <p>Created by <strong>Isaac Oselukwue</strong></p>
   <p>Built on Meta Model API: SAM 3.1, Muse Spark 1.3 and Muse Wonder 1.0</p>
@@ -70,7 +65,6 @@ await card(`<h2>How it works</h2>
   <p>3. Deterministic rules decide what is supported. Closeness is never treated as contact.</p>
   <p>4. Questions are answered only with claims the server validates, each linked to its evidence.</p>`, 10000);
 
-// B. Real launch output, replayed from a timestamped capture at 2x.
 await page.setContent(`<!doctype html><html><head><style>${interFace} ${monoFace}
   body{margin:0;background:#0b1220;color:#d1fae5;font:18px/1.6 "Mono Card",ui-monospace,Menlo,monospace;padding:48px;overflow-wrap:anywhere}
   .label{color:#94a3b8;font-family:"Inter Card",system-ui,sans-serif;font-size:18px;margin-bottom:20px} .cmd{color:#fff}</style></head>
@@ -88,12 +82,10 @@ for (const line of transcript) {
 }
 await wait(2000);
 
-// C. Home.
 await open("#/");
 await caption("The home page lists recorded investigations, which replay stored live runs without new model calls. Uploads stay private to the owner.");
 await wait(5000);
 
-// D. Upload.
 await caption("Upload a short fixed-camera clip. This one is a drawn test animation of a bottle on a park bench.");
 await page.getByRole("button", { name: "Analyse your own clip" }).click();
 await wait(1200);
@@ -110,7 +102,6 @@ await page.getByRole("radio", { name: /Live analysis/ }).check();
 await caption("Live mode calls Meta Model API. Every paid call is reserved against the cost caps before it is sent.");
 await wait(4500);
 
-// E. Live analysis, shown at 2x.
 await page.getByRole("button", { name: "Analyse this object" }).click();
 markers.push({ start: now(), speed: 2, label: "live analysis" });
 await caption("Live analysis (shown at 2x speed): SAM 3.1 tracks the bottle and people, then Muse Spark assesses each candidate from original frames.");
@@ -119,7 +110,6 @@ await page.locator(".answer").waitFor({ timeout: 240000 });
 markers[markers.length - 1].end = now();
 const analysisUrl = page.url();
 
-// F. History and overlays.
 await caption("The history: the person walking past is a rejected candidate, and the visible lift is a supported pick-up by P2.");
 await wait(6000);
 await page.locator(".event.status-rejected summary").click();
@@ -129,7 +119,6 @@ await page.locator("video").evaluate((v) => { v.currentTime = 13.8; });
 await caption("Overlays show only observed tracks: the bottle's SAM mask and box, and P2's box. The timeline marks when the bottle was observed.");
 await wait(6000);
 
-// G. Live question, shown at 2x.
 await page.locator(".composer").evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
 await wait(900);
 await page.locator("#question").fill("Who picked up the bottle?");
@@ -147,7 +136,6 @@ await caption("Each citation opens the evidence: original frames before, during 
 await wait(6500);
 await page.keyboard.press("Escape");
 
-// H. Recorded occlusion run.
 const demos = await page.evaluate(async () => (await (await fetch("/api/v1/demos")).json()));
 const hidden = demos.find((d) => d.title === "Hidden removal");
 await open(`#/analysis/${hidden.analysis_id}`);
@@ -166,7 +154,6 @@ await page.locator(".answer-card").evaluate((el) => el.scrollIntoView({ block: "
 await caption("A real failure in this run: Muse Wonder asked for more evidence on the last sighting, so a supported claim was withheld. Review can block a claim, never promote one.");
 await wait(8000);
 
-// I. Integrity on the live analysis.
 await page.goto(analysisUrl);
 await page.waitForLoadState("networkidle");
 await page.locator(".integrity").scrollIntoViewIfNeeded();
@@ -183,7 +170,6 @@ await page.locator(".verify-result").evaluate((el) => el.scrollIntoView({ block:
 await caption("Checked against a different head, verification fails. Integrity is not proof that the video or its interpretation is true.");
 await wait(5500);
 
-// J. Results.
 await card(`<h2>Measured so far</h2>
   <table>
   <tr><td>Planted faults blocked by the validator</td><td class="mono">30 / 30, 0 / 10 clean claims blocked</td></tr>

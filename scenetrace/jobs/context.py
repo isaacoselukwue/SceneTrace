@@ -1,4 +1,3 @@
-"""Process-wide services shared by the API and the worker."""
 from __future__ import annotations
 
 import hashlib
@@ -15,7 +14,6 @@ from .events import JobEvents
 
 
 def sample_registry(root: Path) -> dict[str, str]:
-    """SHA-256 of the bundled synthetic clips, so an upload of one is labelled synthetic, not real footage."""
     out: dict[str, str] = {}
     for label in sorted((root / "samples" / "synthetic").glob("*.label.json")):
         video = label.with_name(label.name.replace(".label.json", ".mp4"))

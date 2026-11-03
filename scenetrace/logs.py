@@ -1,4 +1,3 @@
-"""Structured JSON logs with secret and payload redaction."""
 from __future__ import annotations
 
 import json

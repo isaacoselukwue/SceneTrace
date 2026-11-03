@@ -1,5 +1,3 @@
-// Formatting helpers. Times are integer milliseconds on the clip timeline.
-
 export function clipTime(ms: number): string {
   const total = Math.max(0, Math.round(ms));
   const minutes = Math.floor(total / 60_000);

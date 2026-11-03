@@ -1,5 +1,3 @@
-"""Remote provider file cleanup and local retention. Local deletion is not proof of remote deletion,
-so remote deletions are tracked separately and retried."""
 from __future__ import annotations
 
 import datetime as dt
@@ -15,7 +13,6 @@ MAX_ATTEMPTS = 5
 
 
 def cleanup_remote_files(svc: Services, *, transport: object | None = None) -> int:
-    """Delete provider files whose analyses are no longer active. Returns the number deleted."""
     rows = svc.db.query(
         "SELECT r.* FROM remote_files r WHERE r.deleted_at IS NULL AND r.attempts < ? AND NOT EXISTS ("
         " SELECT 1 FROM jobs j WHERE j.analysis_id = r.analysis_id AND j.state IN ('queued', 'running', 'cancel_requested'))",
@@ -43,7 +40,6 @@ def cleanup_remote_files(svc: Services, *, transport: object | None = None) -> i
 
 
 def expire_clips(svc: Services) -> int:
-    """Revoke access to expired non-demo clips and remove their private media."""
     now = utc_now()
     rows = svc.db.query("SELECT * FROM clips WHERE expires_at IS NOT NULL AND expires_at < ? AND status NOT IN ('deleted', 'expired')"
                         " AND owner_id != 'public'", (now,))

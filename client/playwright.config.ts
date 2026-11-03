@@ -1,7 +1,5 @@
 import { defineConfig } from "@playwright/test";
 
-// Browser tests run against the real server in fixture mode on a throwaway data directory.
-// Recorded demonstrations are replayed into it at startup; no provider is ever called.
 const port = 8799;
 export default defineConfig({
   testDir: "e2e",

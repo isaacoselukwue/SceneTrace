@@ -1,9 +1,3 @@
-"""Private media layout and registered assets.
-
-Paths are generated from server IDs only. Assets are served by ID after an owner
-check, a containment check and a symlink check; the storage root is never
-exposed as a static directory.
-"""
 from __future__ import annotations
 
 import hashlib
@@ -40,7 +34,6 @@ class Storage:
         for sub in ("private", "public-demos", "tmp", "db"):
             (self.root / sub).mkdir(parents=True, exist_ok=True)
 
-    # Layout ---------------------------------------------------------------
     def clip_dir(self, owner_id: str, clip_id: str) -> Path:
         return self.root / "private" / _check_id(owner_id) / _check_id(clip_id)
 
@@ -68,7 +61,6 @@ class Storage:
         return path.resolve().relative_to(self.root).as_posix()
 
     def contained(self, rel_path: str) -> Path:
-        """Resolve a stored relative path, refusing traversal and symlinks."""
         if rel_path.startswith("/") or "\\" in rel_path or any(p in ("", ".", "..") for p in rel_path.split("/")):
             raise ValueError("unsafe stored path")
         path = self.root.joinpath(*rel_path.split("/"))
@@ -80,7 +72,6 @@ class Storage:
         path.resolve().relative_to(self.root)
         return path
 
-    # Assets ---------------------------------------------------------------
     def register_asset(self, *, owner_id: str, clip_id: str, path: Path, kind: str, media_type: str,
                        derived: bool, analysis_id: str | None = None, public: bool | None = None) -> str:
         if path.is_symlink() or not path.is_file():

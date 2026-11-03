@@ -1,10 +1,3 @@
-"""Normalise provider tracking results into per-frame observations and clip-local entities.
-
-The target response maps to O1. Person objects map to P1..Pn ordered by first
-observed time, then centre x and y, then provider ordinal. Tracks from different
-requests are never merged by equal integer IDs. Every requested frame gets an
-explicit state: observed, not_detected (stream completed, no record) or unknown.
-"""
 from __future__ import annotations
 
 from collections import defaultdict
@@ -52,7 +45,6 @@ def build_observations(*, analysis_id: str, clip_id: str, frame_map: FrameMap, r
         for record in result.records:
             by_object[record.provider_object_id].append(record)
         if result.role == "target":
-            # A box prompt names the target as object 1; any other object is not the selected target.
             chosen = by_object.get("1") or (by_object[min(by_object)] if len(by_object) == 1 else [])
             _emit(observations, entities, analysis_id, clip_id, result, "1", "O1", "object", "Selected object",
                   chosen, frame_map, t_of, config)
