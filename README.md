@@ -12,7 +12,7 @@ It is built on Meta Model API: **SAM 3.1** segments and tracks the object and th
 
 ## Demonstration
 
-[Watch the demonstration (2 min 50 s, docs/media/scenetrace-demo.mp4)](docs/media/scenetrace-demo.mp4). It is a screen recording of the running application: a live analysis and a live question against Meta Model API, a recorded run in which the reviewer withheld a supported claim, and the integrity check. Waiting time during the two live calls is shown at 2x speed and labelled on screen. The clips are drawn test animations, not real footage.
+[Watch the demonstration on YouTube (2 min 56 s)](https://youtu.be/d3bhHTM-ON4); the same video is in [docs/media/scenetrace-demo.mp4](docs/media/scenetrace-demo.mp4). It is a narrated screen recording of the running application. A real office clip, filmed with the people's permission, is analysed live against Meta Model API: a person who walks past a spray bottle is cleared, and when the bottle disappears behind two people SceneTrace reports a possible pick-up by the one person it was next seen moving with, without claiming the actor is established. A live question, its cited evidence, recorded runs on drawn test clips (a visible pick-up that is supported and a removal that names no one, with the reviewer withholding a claim) and the integrity check follow. Waiting time during the two live calls is shown at 2x speed and labelled on screen.
 
 ## Quick start
 
@@ -98,7 +98,7 @@ The reviewer misses changes it cannot see (one-second time shifts, superseded re
 
 **Token counting for video.** `POST /v1/responses/input_tokens` counted 384 input tokens for each whole-video request, while the provider billed 4,271 and 5,311: the count does not include video tokens. SceneTrace therefore adds 600 tokens per second of video to the reservation for video requests, which covered the billed input in both runs. For image requests the count is an upper bound (881 counted, 670 billed).
 
-**Software checks.** 94 Python tests pass (2 opt-in live tests skipped by default), including an offline replay of both recorded demonstrations, plus 53 tests of the core claim, budget and integrity modules, 10 client unit tests and 11 browser test runs across desktop and phone viewports: one drives the whole flow on a phone with touch input and checks touch target sizes, and one checks that cards sharing a row share their edges. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
+**Software checks.** 100 Python tests pass (2 opt-in live tests skipped by default), including an offline replay of both recorded demonstrations, plus 53 tests of the core claim, budget and integrity modules, 10 client unit tests and 11 browser test runs across desktop and phone viewports: one drives the whole flow on a phone with touch input and checks touch target sizes, and one checks that cards sharing a row share their edges. A live capability check against Meta Model API passed all 10 checks on 28 October 2026 ([reports/provider-capabilities.json](reports/provider-capabilities.json)).
 
 ## Run it
 
